@@ -1,1 +1,304 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>NewEnergy | Monitoramento Profissional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-primary: #1a365d;
+            --brand-accent: #007aff;
+            --bg-body: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #e11d48;
+            --shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
 
+        body { 
+            margin: 0; font-family: 'Inter', sans-serif; 
+            background: var(--bg-body); color: var(--text-main); 
+            display: flex; justify-content: center; padding: 20px;
+        }
+
+        .card { 
+            background: var(--card-bg); border-radius: 16px; padding: 30px; 
+            width: 100%; max-width: 900px; border: 1px solid var(--border); 
+            box-shadow: var(--shadow); 
+        }
+        
+        header { border-left: 6px solid var(--brand-primary); padding-left: 20px; margin-bottom: 30px; }
+        header h1 { margin:0; font-size: 26px; font-weight: 800; color: var(--brand-primary); letter-spacing: -1px; }
+        header p { margin:4px 0 0; color: var(--brand-accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+
+        .tabs { display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 25px; gap: 4px; }
+        .tab { flex: 1; padding: 12px; text-align: center; border-radius: 9px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-muted); transition: 0.3s; }
+        .tab.active { background: white; color: var(--brand-primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+
+        .chart-container { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 30px; border: 1px solid var(--border); height: 380px; }
+
+        #lista { max-height: 450px; overflow-y: auto; padding-right: 10px; }
+        .data-divider { color: var(--brand-primary); font-size: 11px; font-weight: 800; margin: 25px 0 12px; display: flex; align-items: center; }
+        .data-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); margin-left: 15px; }
+
+        .item { 
+            background: #fff; padding: 14px 18px; border-radius: 10px; 
+            margin-bottom: 8px; display: flex; justify-content: space-between; 
+            align-items: center; border: 1px solid var(--border); transition: 0.2s;
+        }
+        .item.alerta { border-left: 4px solid var(--danger); background: #fff1f2; }
+        
+        .btn-group { display: flex; gap: 15px; margin-top: 30px; }
+        .btn { flex: 1; padding: 16px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 14px; }
+        .btn-pdf { background: var(--brand-primary); color: #fff; box-shadow: 0 4px 12px rgba(26, 54, 93, 0.2); }
+        .btn-pdf:disabled { background: #94a3b8; cursor: not-allowed; box-shadow: none; }
+        .btn-back { background: #fff; color: var(--text-muted); border: 1.5px solid var(--border); }
+
+        .valor-critico { color: var(--danger) !important; font-weight: 900; }
+        #lista::-webkit-scrollbar { width: 5px; }
+        #lista::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<div class="card">
+    <header>
+        <h1>NEWENERGY</h1>
+        <p>Sistema de Monitoramento</p>
+    </header>
+
+    <div class="tabs">
+        <div class="tab active" data-periodo="diario">Hoje</div>
+        <div class="tab" data-periodo="semanal">Últimos 7 Dias</div>
+        <div class="tab" data-periodo="mensal">Mês Atual</div>
+        <div class="tab" data-periodo="anual">Ano Atual</div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="mainChart"></canvas>
+    </div>
+
+    <div id="lista"></div>
+
+    <div class="btn-group">
+        <button class="btn btn-pdf" id="btnPdf" onclick="exportarPDF()">Exportar Relatório Profissional</button>
+        <button class="btn btn-back" onclick="location.href='painel.html'">Voltar</button>
+    </div>
+</div>
+
+<script>
+firebase.initializeApp({
+    apiKey: "AIzaSyB5FnkQiFi3gn9Iup2KNcbrKxWd-0Jjo6Y",
+    authDomain: "oficial-688e8.firebaseapp.com",
+    databaseURL: "https://oficial-688e8-default-rtdb.firebaseio.com/",
+    projectId: "oficial-688e8"
+});
+
+const db = firebase.database();
+let myChart = null, globalData = [], limites = { tMin: 0, tMax: 40, hMin: 0, hMax: 100 };
+
+db.ref("/config_alertas").on("value", s => { if(s.val()) limites = s.val(); });
+
+async function fetchData(periodo) {
+    const listaDiv = document.getElementById("lista");
+    listaDiv.innerHTML = "<p style='text-align:center; padding:40px;'>Sincronizando dados...</p>";
+    globalData = []; 
+    if(myChart) myChart.destroy();
+
+    try {
+        const snapshot = await db.ref("/historico/diario").once("value");
+        const base = snapshot.val();
+        if (!base) { listaDiv.innerHTML = "<p style='text-align:center;'>Sem registros.</p>"; return; }
+
+        const agora = new Date();
+        const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
+        const seteDiasAtras = agora.getTime() - (7 * 24 * 60 * 60 * 1000);
+
+        Object.keys(base).forEach(d => {
+            const regs = base[d];
+            Object.keys(regs).forEach(ts => {
+                const tsM = parseInt(ts) * 1000;
+                const dObj = new Date(tsM);
+                let ok = false;
+                if (periodo === 'diario' && tsM >= inicioHoje) ok = true;
+                else if (periodo === 'semanal' && tsM >= seteDiasAtras) ok = true;
+                else if (periodo === 'mensal' && dObj.getMonth() === agora.getMonth() && dObj.getFullYear() === agora.getFullYear()) ok = true;
+                else if (periodo === 'anual' && dObj.getFullYear() === agora.getFullYear()) ok = true;
+
+                if (ok) {
+                    globalData.push({
+                        ts: parseInt(ts),
+                        temp: parseFloat(regs[ts].temp),
+                        hum: parseFloat(regs[ts].hum),
+                        data: dObj.toLocaleDateString('pt-BR'),
+                        hora: dObj.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})
+                    });
+                }
+            });
+        });
+
+        globalData = globalData.filter((v, i, a) => a.findIndex(t => t.ts === v.ts) === i);
+        globalData.sort((a, b) => b.ts - a.ts);
+        renderUI();
+        renderChart(periodo);
+    } catch (e) { console.error(e); }
+}
+
+function renderUI() {
+    const listaDiv = document.getElementById("lista");
+    listaDiv.innerHTML = "";
+    let lastD = "";
+    globalData.forEach(d => {
+        if (d.data !== lastD) {
+            const div = document.createElement('div');
+            div.className = 'data-divider';
+            div.innerHTML = `<span>${d.data}</span>`;
+            listaDiv.appendChild(div);
+            lastD = d.data;
+        }
+        const erro = d.temp > limites.tMax || d.temp < limites.tMin || d.hum > limites.hMax || d.hum < limites.hMin;
+        const item = document.createElement('div');
+        item.className = `item ${erro ? 'alerta' : ''}`;
+        item.innerHTML = `<b>${d.hora}</b><div style="display:flex; gap:20px; text-align:right;">
+            <div><small style="display:block;font-size:8px;color:var(--text-muted)">TEMP</small><span style="font-weight:700" class="${(d.temp > limites.tMax || d.temp < limites.tMin) ? 'valor-critico':''}">${d.temp.toFixed(1)}°C</span></div>
+            <div><small style="display:block;font-size:8px;color:var(--text-muted)">UMID</small><span style="font-weight:700" class="${(d.hum > limites.hMax || d.hum < limites.hMin) ? 'valor-critico':''}">${d.hum.toFixed(1)}%</span></div>
+        </div>`;
+        listaDiv.appendChild(item);
+    });
+}
+
+function renderChart(periodo) {
+    const chartData = [...globalData].sort((a,b) => a.ts - b.ts);
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    
+    const gradT = ctx.createLinearGradient(0, 0, 0, 400);
+    gradT.addColorStop(0, 'rgba(244, 63, 94, 0.2)'); gradT.addColorStop(1, 'rgba(244, 63, 94, 0)');
+    const gradH = ctx.createLinearGradient(0, 0, 0, 400);
+    gradH.addColorStop(0, 'rgba(0, 122, 255, 0.2)'); gradH.addColorStop(1, 'rgba(0, 122, 255, 0)');
+
+    myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.map(d => (periodo === 'diario' || periodo === 'semanal') ? `${d.data.split('/')[0]}/${d.data.split('/')[1]} ${d.hora}` : d.data),
+            datasets: [
+                { label: 'Temperatura (°C)', data: chartData.map(d => d.temp), borderColor: '#f43f5e', backgroundColor: gradT, fill: true, tension: 0.4, pointRadius: chartData.length > 50 ? 0 : 2, borderWidth: 2 },
+                { label: 'Umidade (%)', data: chartData.map(d => d.hum), borderColor: '#007aff', backgroundColor: gradH, fill: true, tension: 0.4, pointRadius: chartData.length > 50 ? 0 : 2, borderWidth: 2 }
+            ]
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { font: { family: 'Inter', weight: 'bold' } } } },
+            scales: { 
+                x: { ticks: { autoSkip: true, maxTicksLimit: 12 } },
+                y: { grid: { color: '#f1f5f9' } }
+            } 
+        }
+    });
+}
+
+async function exportarPDF() {
+    if (globalData.length === 0) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const btn = document.getElementById('btnPdf');
+    const aba = document.querySelector('.tab.active').innerText;
+    
+    btn.disabled = true;
+    const originalText = btn.innerText;
+
+    // --- CORREÇÃO: PRÉ-CÁLCULO DINÂMICO DE PÁGINAS ---
+    const calcularTotalPaginas = () => {
+        let tempY = 105; 
+        let totalPg = 1;
+        for (let i = 0; i < globalData.length; i++) {
+            if (tempY > 280) { totalPg++; tempY = 52 + 10; }
+            tempY += 8;
+        }
+        return totalPg;
+    };
+    const totalPaginasReal = calcularTotalPaginas();
+
+    const header = (p) => {
+        doc.setFillColor(26, 54, 93); doc.rect(0, 0, 210, 38, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.text("NEWENERGY", 15, 16);
+        doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(200, 210, 220); 
+        doc.text("SISTEMA DE MONITORAMENTO", 15, 23);
+        doc.setFontSize(8); doc.setTextColor(170, 185, 200);
+        doc.text(`LIMITES: T: ${limites.tMin}°C a ${limites.tMax}°C  |  H: ${limites.hMin}% a ${limites.hMax}%`, 15, 29);
+
+        doc.setTextColor(255, 255, 255); doc.setFontSize(8);
+        doc.text(`RELATÓRIO: ${aba.toUpperCase()}`, 195, 15, {align: "right"});
+        doc.text(`DATA: ${new Date().toLocaleDateString('pt-BR')}`, 195, 21, {align: "right"});
+        doc.text(`PÁGINA: ${p} / ${totalPaginasReal}`, 195, 27, {align: "right"});
+        doc.setFillColor(0, 122, 255); doc.rect(0, 38, 210, 1.2, 'F');
+    };
+
+    const drawTableHead = (yPos) => {
+        doc.setFillColor(245, 248, 251); doc.rect(15, yPos - 6, 180, 10, 'F');
+        doc.setDrawColor(200, 210, 220); doc.line(15, yPos + 4, 195, yPos + 4);
+        doc.setTextColor(26, 54, 93); doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+        doc.text("DATA / HORA", 20, yPos); doc.text("TEMPERATURA", 78, yPos); doc.text("UMIDADE", 128, yPos); doc.text("STATUS", 172, yPos);
+        return yPos + 10;
+    };
+
+    header(1);
+    try {
+        const img = document.getElementById('mainChart').toDataURL("image/png", 1.0);
+        doc.addImage(img, 'PNG', 15, 48, 180, 45);
+    } catch(e) {}
+
+    let y = 105, pg = 1;
+    y = drawTableHead(y);
+
+    for (let i = 0; i < globalData.length; i++) {
+        const d = globalData[i];
+        if (y > 280) { doc.addPage(); pg++; header(pg); y = 52; y = drawTableHead(y); }
+        const erroGeral = d.temp > limites.tMax || d.temp < limites.tMin || d.hum > limites.hMax || d.hum < limites.hMin;
+
+        if (erroGeral) {
+            doc.setFillColor(255, 241, 242); doc.rect(15, y - 5, 180, 8, 'F');
+            doc.setTextColor(225, 29, 72); doc.setFont("helvetica", "bold");
+        } else {
+            doc.setTextColor(51, 65, 85); doc.setFont("helvetica", "normal");
+            if (i % 2 === 0) { doc.setFillColor(252, 253, 255); doc.rect(15, y - 5, 180, 8, 'F'); }
+        }
+
+        doc.setFontSize(8);
+        doc.text(`${d.data}  ${d.hora}`, 20, y);
+        doc.text(`${d.temp.toFixed(1)}°C`, 83, y);
+        doc.text(`${d.hum.toFixed(1)}%`, 133, y);
+        if (erroGeral) { doc.text("ALERTA", 172, y); }
+        else { doc.setTextColor(16, 185, 129); doc.text("NORMAL", 172, y); }
+        y += 8;
+        if (i % 50 === 0) {
+            btn.innerText = `Gerando... ${Math.round((i/globalData.length)*100)}%`;
+            await new Promise(r => setTimeout(r, 1));
+        }
+    }
+
+    doc.setFontSize(7); doc.setTextColor(148, 163, 184);
+    doc.text("NewEnergy Analytics - Monitoramento de Precisão", 105, 292, {align: "center"});
+    doc.save(`Relatorio_NewEnergy_${aba.replace(/ /g, "_")}.pdf`);
+    btn.disabled = false; btn.innerText = originalText;
+}
+
+firebase.auth().onAuthStateChanged(u => { if(u) fetchData('diario'); else location.href='index.html'; });
+
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+    fetchData(this.dataset.periodo);
+}));
+</script>
+</body>
+</html>
