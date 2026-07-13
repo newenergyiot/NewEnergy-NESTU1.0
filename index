@@ -1,1 +1,239 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NewEnergy | Monitoramento Inteligente</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      /* Paleta Panorama Health / High-End Tech */
+      --brand-primary: #1a365d;    /* Azul Marinho Corporativo */
+      --brand-accent: #007aff;     /* Azul Apple/Tech */
+      --bg-light: #f8fafc;        /* Cinza muito claro (fundo) */
+      --text-dark: #1e293b;        /* Texto principal */
+      --text-light: #64748b;       /* Texto secundário */
+      --error: #e11d48;
+      --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+    }
 
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-light);
+      background-image: radial-gradient(at 0% 0%, rgba(0, 122, 255, 0.03) 0, transparent 50%), 
+                        radial-gradient(at 50% 0%, rgba(26, 54, 93, 0.03) 0, transparent 50%);
+      color: var(--text-dark);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      text-align: left;
+    }
+
+    .header {
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .logo-badge {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--brand-accent);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--brand-primary);
+      letter-spacing: -0.5px;
+    }
+
+    p {
+      color: var(--text-light);
+      font-size: 14px;
+      margin: 8px 0 0 0;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-size: 13px;
+      color: var(--text-dark);
+      font-weight: 500;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      color: var(--text-dark);
+      font-size: 15px;
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--brand-accent);
+      box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: var(--brand-primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      background: #2d4a77;
+      box-shadow: 0 4px 12px rgba(26, 54, 93, 0.2);
+    }
+
+    button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    #error {
+      font-size: 13px;
+      color: var(--error);
+      background: #fff1f2;
+      border: 1px solid #ffe4e6;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      display: none;
+      text-align: center;
+    }
+
+    .footer-note {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #f1f5f9;
+      font-size: 12px;
+      color: var(--text-light);
+      text-align: center;
+    }
+
+    /* Suavização de scroll e seleção */
+    ::selection { background: rgba(0, 122, 255, 0.2); }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+  <div class="card">
+    <div class="header">
+      <div class="logo-badge">Industrial Intelligence</div>
+      <h1>NewEnergy</h1>
+      <p>Acesse o portal de monitoramento</p>
+    </div>
+
+    <div id="error"></div>
+
+    <div class="input-group">
+      <label>E-mail Corporativo</label>
+      <input type="email" id="email" placeholder="exemplo@empresa.com.br">
+    </div>
+
+    <div class="input-group">
+      <label>Senha de Acesso</label>
+      <input type="password" id="password" placeholder="Digite sua senha">
+    </div>
+
+    <button id="btnLogin">Entrar no Sistema</button>
+
+    <div class="footer-note">
+      &copy; 2024 NewEnergy Solutions • Infraestrutura Crítica
+    </div>
+  </div>
+
+  <script>
+    // Configuração do Firebase (Mantida a original)
+    const firebaseConfig = {
+      apiKey: "AIzaSyB5FnkQiFi3gn9Iup2KNcbrKxWd-0Jjo6Y",
+      authDomain: "oficial-688e8.firebaseapp.com",
+      databaseURL: "https://oficial-688e8-default-rtdb.firebaseio.com/",
+      projectId: "oficial-688e8"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    const emailEl = document.getElementById("email");
+    const passEl = document.getElementById("password");
+    const btnLogin = document.getElementById("btnLogin");
+    const errorEl = document.getElementById("error");
+
+    auth.onAuthStateChanged(user => {
+      if (user) window.location.href = "painel.html";
+    });
+
+    btnLogin.addEventListener("click", () => {
+      const email = emailEl.value;
+      const pass = passEl.value;
+
+      if(!email || !pass) {
+        showError("Preencha todos os campos para prosseguir.");
+        return;
+      }
+
+      btnLogin.innerText = "Autenticando...";
+      btnLogin.disabled = true;
+      errorEl.style.display = "none";
+
+      auth.signInWithEmailAndPassword(email, pass)
+        .then(() => {
+          window.location.href = "painel.html";
+        })
+        .catch(err => { 
+          btnLogin.innerText = "Entrar no Sistema";
+          btnLogin.disabled = false;
+          showError("Acesso negado. Verifique suas credenciais."); 
+        });
+    });
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.style.display = "block";
+    }
+
+    document.addEventListener("keypress", (e) => {
+      if(e.key === "Enter") btnLogin.click();
+    });
+  </script>
+</body>
+</html>
