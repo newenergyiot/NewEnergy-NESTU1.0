@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NewEnergy Master | Central de Servidores</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-primary: #1a365d;
+      --brand-accent: #007aff;
+      --bg-body: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --on: #10b981;
+      --off: #e11d48;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+    body {
+      margin: 0; font-family: 'Inter', sans-serif;
+      background: var(--bg-body); color: var(--text-main);
+      padding: 30px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px;
+    }
+    h1 { margin: 0; font-size: 28px; font-weight: 800; color: var(--brand-primary); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .card-sensor {
+      background: var(--card-bg); border-radius: 12px; padding: 20px;
+      box-shadow: var(--shadow); border: 1px solid #e2e8f0; position: relative;
+    }
+    .card-sensor.offline { border-left: 5px solid var(--off); }
+    .card-sensor.online { border-left: 5px solid var(--on); }
+    .sensor-nome { font-size: 16px; font-weight: 700; margin: 0 0 5px 0; color: var(--brand-primary); }
+    .sensor-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 15px; }
+    .leituras { display: flex; justify-content: space-between; background: #f8fafc; padding: 12px; border-radius: 8px; }
+    .leitura-box { text-align: center; flex: 1; }
+    .leitura-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+    .leitura-valor { font-size: 20px; font-weight: 700; color: var(--brand-primary); margin-top: 4px; }
+    .status-indicator {
+      position: absolute; top: 20px; right: 20px; font-size: 10px;
+      font-weight: 700; padding: 4px 8px; border-radius: 12px;
+    }
+    .status-indicator.online { background: #ecfdf5; color: var(--on); }
+    .status-indicator.offline { background: #fff1f2; color: var(--off); }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div>
+      <h1>CENTRAL NEWENERGY</h1>
+      <p style="margin: 5px 0 0 0; color: var(--brand-accent); font-weight: 600;">Monitoramento Geral de Infraestrutura Ativa</p>
+    </div>
+    <div style="text-align: right;">
+      <span id="contadores" style="font-size: 14px; font-weight: 600; color: var(--text-muted);">Sincronizando servidores...</span>
+    </div>
+  </header>
+
+  <div class="grid" id="gridSensores">
+    <!-- Os cartões de todos os sensores conectados vão aparecer aqui dinamicamente -->
+  </div>
+</div>
+
+<script>
+// Configuração do seu Firebase Realtime Database
+const firebaseConfig = {
+  apiKey: "AIzaSyB5FnkQiFi3gn9Iup2KNcbrKxWd-0Jjo6Y",
+  authDomain: "oficial-688e8.firebaseapp.com",
+  databaseURL: "https://oficial-688e8-default-rtdb.firebaseio.com/",
+  projectId: "oficial-688e8"
+};
+
+// Inicializa o Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Escuta a lista centralizada de sensores
+db.ref("/central_sensores").on("value", snapshot => {
+  const sensores = snapshot.val();
+  const grid = document.getElementById("gridSensores");
+  grid.innerHTML = "";
+  
+  if(!sensores) {
+    grid.innerHTML = "<p>Nenhum sensor cadastrado na central master.</p>";
+    return;
+  }
+
+  let total = 0;
+  let online = 0;
+
+  Object.keys(sensores).forEach(id => {
+    const sConf = sensores[id];
+    total++;
+
+    // Criar elemento do card na tela
+    const card = document.createElement("div");
+    card.className = "card-sensor";
+    card.id = `card_${id}`;
+    card.innerHTML = `
+      <div class="sensor-nome">${sConf.nome}</div>
+      <div class="sensor-meta">ID: ${id} | Cliente: ${sConf.clientID}</div>
+      <div class="status-indicator" id="status_${id}">Carregando...</div>
+      <div class="leituras">
+        <div class="leitura-box" style="border-right: 1px solid #e2e8f0;">
+          <div class="leitura-label">Temperatura</div>
+          <div class="leitura-valor" id="temp_${id}">--°C</div>
+        </div>
+        <div class="leitura-box">
+          <div class="leitura-label">Umidade</div>
+          <div class="leitura-valor" id="hum_${id}">--%</div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+
+    // Escutar em tempo real as variáveis individuais baseadas na rota cadastrada
+    db.ref(sConf.rotaTemp).on("value", s => {
+      document.getElementById(`temp_${id}`).innerText = s.val() ? parseFloat(s.val()).toFixed(1) + "°C" : "--°C";
+    });
+
+    db.ref(sConf.rotaHum).on("value", s => {
+      document.getElementById(`hum_${id}`).innerText = s.val() ? parseFloat(s.val()).toFixed(1) + "%" : "--%";
+    });
+
+    // Escuta batimento cardíaco (last_seen) para determinar online/offline de forma independente
+    db.ref(sConf.rotaLastSeen).on("value", s => {
+      const ts = s.val();
+      
+      // Se o timestamp não atualizou nos últimos 25 segundos, considera offline
+      const isOff = !ts || (Math.floor(Date.now() / 1000) - ts) > 25;
+      const statusIndicator = document.getElementById(`status_${id}`);
+      const cardEl = document.getElementById(`card_${id}`);
+      
+      if(isOff) {
+        statusIndicator.innerText = "OFFLINE";
+        statusIndicator.className = "status-indicator offline";
+        cardEl.className = "card-sensor offline";
+      } else {
+        statusIndicator.innerText = "ONLINE";
+        statusIndicator.className = "status-indicator online";
+        cardEl.className = "card-sensor online";
+        online++;
+      }
+      
+      document.getElementById("contadores").innerText = `Sensores: ${total} | Ativos: ${online} | Offline: ${total - online}`;
+    });
+  });
+});
+</script>
+</body>
+</html>
