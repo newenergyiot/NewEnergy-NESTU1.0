@@ -38,12 +38,12 @@
     </main>
 
     <!-- ======================================================= -->
-    <!-- MODAL DE CADASTRO DE NOVO SENSOR                        -->
+    <!-- MODAL DE CADASTRO / EDIÇÃO DE SENSOR                    -->
     <!-- ======================================================= -->
     <div id="modal-cadastro" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 border border-slate-100">
             <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
-                <h2 class="text-lg font-bold text-slate-800">Cadastrar Novo Dispositivo</h2>
+                <h2 id="modal-titulo" class="text-lg font-bold text-slate-800">Cadastrar Novo Dispositivo</h2>
                 <button onclick="fecharModalCadastro()" class="text-slate-400 hover:text-slate-600 font-semibold text-sm">
                     Cancelar
                 </button>
@@ -54,10 +54,10 @@
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">ID Único do Sensor (Ex: SENSOR_02)</label>
                     <input type="text" id="cad-id" required placeholder="SENSOR_02" 
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono disabled:opacity-60 disabled:cursor-not-allowed">
                 </div>
 
-                <!-- Nome do Local -->
+                <!-- Nome do Local / Equipamento -->
                 <div>
                     <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Local / Equipamento (Ex: ELEKTA - PRECISE)</label>
                     <input type="text" id="cad-nome" required placeholder="ELEKTA - PRECISE" 
@@ -73,14 +73,14 @@
 
                 <!-- Rota da Temperatura -->
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Temperatura no DB (Ex: sensores/SENSOR_02/temperatura)</label>
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Temperatura (Ex: sensores/SENSOR_02/temperatura)</label>
                     <input type="text" id="cad-rota-temp" required placeholder="sensores/SENSOR_02/temperatura" 
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                 </div>
 
                 <!-- Rota da Umidade -->
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Umidade no DB (Ex: sensores/SENSOR_02/umidade)</label>
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Umidade (Ex: sensores/SENSOR_02/umidade)</label>
                     <input type="text" id="cad-rota-hum" required placeholder="sensores/SENSOR_02/umidade" 
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                 </div>
@@ -93,7 +93,7 @@
                 </div>
 
                 <div class="pt-4">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md">
+                    <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md">
                         Salvar e Iniciar Monitoramento
                     </button>
                 </div>
@@ -102,7 +102,7 @@
     </div>
 
     <script>
-        // 1. Configuração do seu Firebase (Mantendo as credenciais padrão do seu projeto)
+        // 1. Configuração do seu Firebase
         const firebaseConfig = {
             databaseURL: "https://oficial-688e8-default-rtdb.firebaseio.com"
         };
@@ -116,12 +116,18 @@
         const statusConexao = document.getElementById('status-conexao');
         const modalCadastro = document.getElementById('modal-cadastro');
         const formCadastro = document.getElementById('form-cadastro');
+        const modalTitulo = document.getElementById('modal-titulo');
+        const btnSubmit = document.getElementById('btn-submit');
+        const inputId = document.getElementById('cad-id');
 
-        // Função para calcular se o sensor está online (limite de 1 minuto / 60000ms)
+        // Estado do Modal (criar ou editar)
+        let modoEdicao = false;
+
+        // Função para calcular se o sensor está online (limite de 1 minuto)
         function verificarOnline(lastSeenTimestamp) {
             if (!lastSeenTimestamp) return false;
             const agora = Date.now();
-            const diferenca = agora - (lastSeenTimestamp * 1000); // Se o last_seen estiver em segundos, multiplica por 1000
+            const diferenca = agora - (lastSeenTimestamp * 1000); 
             return diferenca < 60000; 
         }
 
@@ -134,24 +140,34 @@
             }
 
             statusConexao.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Conectado ao Firebase`;
-            gridSensores.innerHTML = ''; // Limpa o grid para reconstruir
+            gridSensores.innerHTML = ''; 
 
             snapshot.forEach((childSnapshot) => {
-                const sensorKey = childSnapshot.key; // Ex: "sensor_01"
-                const sensorConf = childSnapshot.val(); // Contém nome, rotaTemp, rotaHum, rotaLastSeen, clientID
+                const sensorKey = childSnapshot.key; 
+                const sensorConf = childSnapshot.val(); 
 
-                // Cria o elemento do Card na tela com valores iniciais de carregamento
+                // Transforma as propriedades em strings seguras para passar no HTML
+                const stringfiedConfig = encodeURIComponent(JSON.stringify({key: sensorKey, ...sensorConf}));
+
+                // Cria o elemento do Card com botões de Editar/Excluir incluídos no canto superior direito
                 const cardHtml = `
-                    <div id="card-${sensorKey}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">
+                    <div id="card-${sensorKey}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow relative group">
                         <div class="flex justify-between items-start mb-4">
-                            <div>
+                            <div class="pr-16">
                                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400">ID: ${sensorKey}</span>
                                 <h3 class="text-lg font-bold text-slate-800 mt-0.5">${sensorConf.nome || 'Sensor Sem Nome'}</h3>
                                 <p class="text-xs text-slate-500">Cliente: <span class="font-semibold text-slate-700">${sensorConf.clientID || 'Não Definido'}</span></p>
                             </div>
-                            <span id="status-badge-${sensorKey}" class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
-                                Carregando...
-                            </span>
+                            
+                            <!-- Ações Rápidas (Editar / Excluir) -->
+                            <div class="absolute top-4 right-4 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                                <button onclick="prepararEdicao('${stringfiedConfig}')" class="p-1.5 bg-slate-100 hover:bg-blue-50 text-slate-500 hover:text-blue-600 rounded-lg transition-colors" title="Editar Configurações">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"></path></svg>
+                                </button>
+                                <button onclick="excluirSensor('${sensorKey}')" class="p-1.5 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg transition-colors" title="Excluir Sensor">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">
@@ -166,7 +182,10 @@
                         </div>
 
                         <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
-                            <span>Sinal do Dispositivo:</span>
+                            <div class="flex items-center gap-1.5">
+                                <span id="status-dot-${sensorKey}" class="w-2 h-2 rounded-full bg-slate-300"></span>
+                                <span id="status-text-${sensorKey}" class="font-medium text-slate-500">Offline</span>
+                            </div>
                             <span id="lastseen-${sensorKey}" class="font-medium text-slate-600">--</span>
                         </div>
                     </div>
@@ -176,7 +195,6 @@
 
                 // 3. Ouvintes dinâmicos que escutam as rotas reais apontadas no cadastro
                 
-                // Monitora a Temperatura em tempo real (Lógica inteligente para ler objetos/pastas ou valor direto)
                 if (sensorConf.rotaTemp) {
                     db.ref(sensorConf.rotaTemp).on('value', (dataSnapshot) => {
                         const tempEl = document.getElementById(`temp-${sensorKey}`);
@@ -195,7 +213,6 @@
                     });
                 }
 
-                // Monitora a Umidade em tempo real (Com a mesma proteção inteligente)
                 if (sensorConf.rotaHum) {
                     db.ref(sensorConf.rotaHum).on('value', (dataSnapshot) => {
                         const humEl = document.getElementById(`hum-${sensorKey}`);
@@ -214,35 +231,34 @@
                     });
                 }
 
-                // Monitora o Last Seen e atualiza o status Online/Offline do sensor
                 if (sensorConf.rotaLastSeen) {
                     db.ref(sensorConf.rotaLastSeen).on('value', (dataSnapshot) => {
                         const lastSeenVal = dataSnapshot.val();
                         const lastSeenEl = document.getElementById(`lastseen-${sensorKey}`);
-                        const badgeEl = document.getElementById(`status-badge-${sensorKey}`);
+                        const statusDot = document.getElementById(`status-dot-${sensorKey}`);
+                        const statusText = document.getElementById(`status-text-${sensorKey}`);
 
                         if (lastSeenVal) {
-                            // Atualiza a exibição da última hora vista
                             const data = new Date(lastSeenVal * 1000);
                             const horaFormatada = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                             if (lastSeenEl) lastSeenEl.textContent = horaFormatada;
 
-                            // Função que executa a cada 10s para re-verificar se o sensor caiu
                             const atualizarStatusOnline = () => {
                                 const isOnline = verificarOnline(lastSeenVal);
-                                if (badgeEl) {
+                                if (statusDot && statusText) {
                                     if (isOnline) {
-                                        badgeEl.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 animate-pulse";
-                                        badgeEl.textContent = "ONLINE";
+                                        statusDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+                                        statusText.className = "font-medium text-emerald-600";
+                                        statusText.textContent = "Online";
                                     } else {
-                                        badgeEl.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700";
-                                        badgeEl.textContent = "OFFLINE";
+                                        statusDot.className = "w-2 h-2 rounded-full bg-rose-500";
+                                        statusText.className = "font-medium text-rose-500";
+                                        statusText.textContent = "Offline";
                                     }
                                 }
                             };
 
                             atualizarStatusOnline();
-                            // Deixa um timer rodando localmente para mudar para OFFLINE caso pare de atualizar
                             if (window[`timer_${sensorKey}`]) clearInterval(window[`timer_${sensorKey}`]);
                             window[`timer_${sensorKey}`] = setInterval(atualizarStatusOnline, 10000);
                         }
@@ -255,31 +271,56 @@
         });
 
         // =======================================================
-        // FUNÇÕES PARA CADASTRO DE NOVO DISPOSITIVO
+        // OPERAÇÕES: CADASTRO, EDIÇÃO E EXCLUSÃO
         // =======================================================
 
         function abrirModalCadastro() {
+            modoEdicao = false;
+            modalTitulo.textContent = "Cadastrar Novo Dispositivo";
+            btnSubmit.textContent = "Salvar e Iniciar Monitoramento";
+            inputId.disabled = false;
+            formCadastro.reset();
             modalCadastro.classList.remove('hidden');
         }
 
         function fecharModalCadastro() {
             modalCadastro.classList.add('hidden');
-            formCadastro.reset(); // Limpa as entradas
+            formCadastro.reset();
         }
 
-        function salvarNovoSensor(event) {
-            event.preventDefault(); // Impede o recarregamento tradicional da página
+        // Preenche o formulário com as configurações do sensor para editar
+        function prepararEdicao(encodedConfig) {
+            const config = JSON.parse(decodeURIComponent(encodedConfig));
+            
+            modoEdicao = true;
+            modalTitulo.textContent = `Editar Sensor: ${config.key}`;
+            btnSubmit.textContent = "Atualizar Configurações";
+            
+            // Preenche e desabilita o campo de ID (já que o ID do nó no Firebase é imutável)
+            inputId.value = config.key;
+            inputId.disabled = true;
 
-            // Captura os valores digitados no formulário
-            const idSensor = document.getElementById('cad-id').value.trim().toUpperCase().replace(/\s+/g, '_');
+            document.getElementById('cad-nome').value = config.nome || '';
+            document.getElementById('cad-cliente').value = config.clientID || '';
+            document.getElementById('cad-rota-temp').value = config.rotaTemp || '';
+            document.getElementById('cad-rota-hum').value = config.rotaHum || '';
+            document.getElementById('cad-rota-seen').value = config.rotaLastSeen || '';
+
+            modalCadastro.classList.remove('hidden');
+        }
+
+        // Salva uma inserção ou edição
+        function salvarNovoSensor(event) {
+            event.preventDefault();
+
+            const idSensor = inputId.value.trim().toUpperCase().replace(/\s+/g, '_');
             const nomeLocal = document.getElementById('cad-nome').value.trim();
             const cliente = document.getElementById('cad-cliente').value.trim();
             const rotaTemp = document.getElementById('cad-rota-temp').value.trim();
             const rotaHum = document.getElementById('cad-rota-hum').value.trim();
             const rotaSeen = document.getElementById('cad-rota-seen').value.trim();
 
-            // Monta o objeto de configuração idêntico à sua estrutura atual do Firebase
-            const novoCadastro = {
+            const dadosCadastro = {
                 clientID: cliente,
                 nome: nomeLocal,
                 rotaHum: rotaHum,
@@ -287,16 +328,34 @@
                 rotaTemp: rotaTemp
             };
 
-            // Envia para o Firebase Realtime Database
-            db.ref(`central_sensores/${idSensor}`).set(novoCadastro)
+            db.ref(`central_sensores/${idSensor}`).set(dadosCadastro)
                 .then(() => {
-                    alert(`Sensor ${idSensor} cadastrado com sucesso!`);
+                    alert(modoEdicao ? `Configurações de ${idSensor} atualizadas!` : `Sensor ${idSensor} cadastrado com sucesso!`);
                     fecharModalCadastro();
                 })
                 .catch((error) => {
-                    console.error("Erro ao cadastrar novo dispositivo: ", error);
-                    alert("Erro ao gravar no banco. Verifique suas regras de segurança ou conexão.");
+                    console.error("Erro no Firebase: ", error);
+                    alert("Ocorreu um erro ao gravar as informações. Verifique sua conexão ou regras.");
                 });
+        }
+
+        // Exclui o sensor de monitoramento
+        function excluirSensor(sensorKey) {
+            const confirmacao = confirm(`Atenção: Tem certeza de que deseja remover o dispositivo ${sensorKey} do sistema?\n\nOs dados de telemetria continuarão salvos, mas ele não será mais monitorado neste painel.`);
+            
+            if (confirmacao) {
+                // Desconecta os ouvintes do Firebase antes de deletar o nó
+                db.ref(`central_sensores/${sensorKey}`).off();
+                
+                db.ref(`central_sensores/${sensorKey}`).remove()
+                    .then(() => {
+                        alert(`Sensor ${sensorKey} excluído com sucesso.`);
+                    })
+                    .catch((error) => {
+                        console.error("Erro ao remover: ", error);
+                        alert("Erro ao excluir. Verifique sua conexão.");
+                    });
+            }
         }
     </script>
 </body>
