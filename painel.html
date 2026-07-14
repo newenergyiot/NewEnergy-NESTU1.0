@@ -66,7 +66,6 @@
   .st-online { color: var(--on); background: #ecfdf5; }
   .st-offline { color: var(--off); background: #fff1f2; }
 
-  /* Estilo dos novos campos de identificação */
   .info-client-box {
     margin-top: 15px; text-align: left; padding-left: 15px;
     border-left: 3px solid var(--brand-accent); font-size: 12px;
@@ -127,16 +126,16 @@
     <input type="text" id="cfgLocal" class="admin-input" placeholder="Ex: CPD Principal / Galpão A">
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-      <div><label>Temp Mín</label><input type="number" id="tMin" class="admin-input"></div>
-      <div><label>Temp Máx</label><input type="number" id="tMax" class="admin-input"></div>
-      <div><label>Hum Mín</label><input type="number" id="hMin" class="admin-input"></div>
-      <div><label>Hum Máx</label><input type="number" id="hMax" class="admin-input"></div>
+      <div><label>Temp Mín</label><input type="number" id="tMin" class="admin-input" step="0.1"></div>
+      <div><label>Temp Máx</label><input type="number" id="tMax" class="admin-input" step="0.1"></div>
+      <div><label>Hum Mín</label><input type="number" id="hMin" class="admin-input" step="0.1"></div>
+      <div><label>Hum Máx</label><input type="number" id="hMax" class="admin-input" step="0.1"></div>
     </div>
 
     <label>E-mail de Notificação</label>
     <div style="display: flex; gap: 8px; margin-bottom: 15px;">
         <input type="email" id="cfgEmail" class="admin-input" style="flex: 2; margin-bottom: 0;">
-        <button onclick="enviarEmailTeste()" class="btn-action" style="flex: 1; font-size: 10px; padding: 0; height: 45px; background: transparent; color: var(--brand-accent); border: 1px solid var(--brand-accent); margin-bottom:0;">TESTAR</button>
+        <button type="button" onclick="enviarEmailTeste()" class="btn-action" style="flex: 1; font-size: 10px; padding: 0; height: 45px; background: transparent; color: var(--brand-accent); border: 1px solid var(--brand-accent); margin-bottom:0;">TESTAR</button>
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -153,20 +152,20 @@
     <div style="background: #f1f5f9; padding: 12px; border-radius: 10px; margin-bottom: 15px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 11px; font-weight: 700;">Alertas: <span id="countEmailDisplay" style="color:var(--brand-accent)">0</span></span>
-            <button onclick="resetarContador()" style="background:var(--off); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:9px; cursor:pointer;">ZERAR</button>
+            <button type="button" onclick="resetarContador()" style="background:var(--off); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:9px; cursor:pointer;">ZERAR</button>
         </div>
     </div>
 
     <div style="margin-top: 10px; border-top: 1px dashed #e2e8f0; padding-top: 15px; margin-bottom: 20px;">
         <label style="color: var(--off);">Manutenção de Banco de Dados</label>
-        <button id="btnLimpar" onclick="executarLimpezaInteligente()" 
+        <button id="btnLimpar" type="button" onclick="executarLimpezaInteligente()" 
             style="background: #fff; color: var(--off); border: 1.5px solid var(--off); padding: 10px; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; font-size: 11px; transition: 0.3s;">
             OTIMIZAR / LIMPAR HISTÓRICO ANTIGO
         </button>
     </div>
 
-    <button id="btnSalvar" class="btn-action" style="background:var(--brand-primary); color:#fff;" onclick="salvarConfig()">Salvar Alterações</button>
-    <button class="btn-action" style="background:transparent; color:var(--text-muted); border:1px solid #e2e8f0" onclick="fecharAdmin()">Cancelar</button>
+    <button id="btnSalvar" type="button" class="btn-action" style="background:var(--brand-primary); color:#fff;" onclick="salvarConfig()">Salvar Alterações</button>
+    <button type="button" class="btn-action" style="background:transparent; color:var(--text-muted); border:1px solid #e2e8f0" onclick="fecharAdmin()">Cancelar</button>
   </div>
 
   <div class="header-main">
@@ -215,7 +214,6 @@ firebase.initializeApp({
 const db = firebase.database();
 const auth = firebase.auth();
 
-// Configurações iniciais atualizadas
 let config = { tMin: 15, tMax: 35, hMin: 30, hMax: 80, intervalo: 2000, emailDestino: "", tempoEmail: 600000, contadorAlertas: 0, leiturasPorHora: 20, cliente: "", local: "" };
 let gT, gH, ultimaVezAlertado = 0;
 
@@ -234,10 +232,12 @@ function rodarDashboard() {
   gH.maxValue = 100; gH.setMinValue(0); gH.set(0);
 
   db.ref("/last_seen").on("value", snap => {
-    const isOff = (Date.now() - (snap.val() * 1000)) > 25000;
-    const st = document.getElementById("status");
-    st.innerHTML = isOff ? '<div class="dot"></div> SISTEMA OFFLINE' : '<div class="dot"></div> MONITORAMENTO ATIVO';
-    st.className = "status-badge " + (isOff ? "st-offline" : "st-online");
+    if (snap.exists()) {
+      const isOff = (Date.now() - (snap.val() * 1000)) > 25000;
+      const st = document.getElementById("status");
+      st.innerHTML = isOff ? '<div class="dot"></div> SISTEMA OFFLINE' : '<div class="dot"></div> MONITORAMENTO ATIVO';
+      st.className = "status-badge " + (isOff ? "st-offline" : "st-online");
+    }
   });
 
   db.ref("/led").on("value", s => {
@@ -248,21 +248,31 @@ function rodarDashboard() {
   });
 
   db.ref("/temp").on("value", s => { 
-    const v = parseFloat(s.val()); gT.set(v); 
-    document.getElementById("tempVal").innerText = v.toFixed(1) + "°C";
-    analisarAlertas();
+    if (s.exists()) {
+      const v = parseFloat(s.val()); 
+      gT.set(v); 
+      document.getElementById("tempVal").innerText = v.toFixed(1) + "°C";
+      analisarAlertas();
+    }
   });
 
   db.ref("/hum").on("value", s => { 
-    const v = parseFloat(s.val()); gH.set(v); 
-    document.getElementById("humVal").innerText = v.toFixed(1) + "%";
-    analisarAlertas();
+    if (s.exists()) {
+      const v = parseFloat(s.val()); 
+      gH.set(v); 
+      document.getElementById("humVal").innerText = v.toFixed(1) + "%";
+      analisarAlertas();
+    }
   });
 }
 
 function analisarAlertas() {
-  const t = parseFloat(document.getElementById("tempVal").innerText);
-  const h = parseFloat(document.getElementById("humVal").innerText);
+  const tStr = document.getElementById("tempVal").innerText;
+  const hStr = document.getElementById("humVal").innerText;
+  if (tStr === "--°C" || hStr === "--%") return;
+
+  const t = parseFloat(tStr);
+  const h = parseFloat(hStr);
   const msg = document.getElementById("alertMessage");
   let erro = (t > config.tMax || t < config.tMin || h > config.hMax || h < config.hMin);
   msg.innerText = erro ? "⚠️ ALERTA: PARÂMETROS FORA DA NORMA" : "";
@@ -283,7 +293,7 @@ function enviarAlertaEmail(t, h) {
   }).then(() => {
     ultimaVezAlertado = Date.now();
     db.ref("/config_alertas/contadorAlertas").set((config.contadorAlertas || 0) + 1);
-  });
+  }).catch(err => console.error("Falha ao enviar emailJS:", err));
 }
 
 async function executarLimpezaInteligente() {
@@ -296,7 +306,7 @@ async function executarLimpezaInteligente() {
         try {
             const snapshot = await db.ref("/historico/diario").once("value");
             const hist = snapshot.val();
-            if (!hist) return alert("Sem dados.");
+            if (!hist) return alert("Sem dados para limpar.");
             const dataCorte = new Date();
             dataCorte.setFullYear(dataCorte.getFullYear() - 2);
             let cont = 0;
@@ -306,8 +316,8 @@ async function executarLimpezaInteligente() {
                     cont++;
                 }
             }
-            alert(`Manutenção concluída! ${cont} pastas removidas.`);
-        } catch (e) { alert("Erro na limpeza."); }
+            alert(`Manutenção concluída! ${cont} diretórios de histórico removidos.`);
+        } catch (e) { alert("Erro na limpeza do banco."); }
         finally { btn.innerText = "OTIMIZAR / LIMPAR HISTÓRICO ANTIGO"; btn.disabled = false; }
     }
 }
@@ -317,7 +327,7 @@ function enviarEmailTeste() {
     if(!d) return alert("Digite um e-mail.");
     emailjs.send("service_kx31f3s", "template_mqzi3at", {
         equipamento: "NewEnergy - TESTE", tipo: "Verificação", valor: "OK", para_email: d
-    }).then(() => alert("Teste enviado!"));
+    }).then(() => alert("Teste enviado com sucesso!")).catch(e => alert("Falha no envio de teste. Verifique suas credenciais EmailJS."));
 }
 
 let cliques = 0;
@@ -328,10 +338,9 @@ document.getElementById("logoAdmin").onclick = () => {
     document.getElementById("tMax").value = config.tMax;
     document.getElementById("hMin").value = config.hMin;
     document.getElementById("hMax").value = config.hMax;
-    document.getElementById("cfgEmail").value = config.emailDestino;
-    document.getElementById("cfgFreq").value = config.leiturasPorHora;
-    document.getElementById("cfgTempoEmail").value = config.tempoEmail / 60000;
-    // Preenche novos campos no admin ao abrir
+    document.getElementById("cfgEmail").value = config.emailDestino || "";
+    document.getElementById("cfgFreq").value = config.leiturasPorHora || 20;
+    document.getElementById("cfgTempoEmail").value = config.tempoEmail ? (config.tempoEmail / 60000) : 10;
     document.getElementById("cfgCliente").value = config.cliente || "";
     document.getElementById("cfgLocal").value = config.local || "";
     cliques = 0;
@@ -350,11 +359,11 @@ function salvarConfig() {
     cliente: document.getElementById("cfgCliente").value,
     local: document.getElementById("cfgLocal").value
   };
-  db.ref("/config_alertas").update(updates).then(() => { alert("Salvo!"); fecharAdmin(); });
+  db.ref("/config_alertas").update(updates).then(() => { alert("Configurações salvas!"); fecharAdmin(); });
 }
 
 function fecharAdmin() { document.getElementById("adminPanel").style.display = "none"; }
-function resetarContador() { if(confirm("Zerar?")) db.ref("/config_alertas/contadorAlertas").set(0); }
+function resetarContador() { if(confirm("Deseja zerar o contador de alertas?")) db.ref("/config_alertas/contadorAlertas").set(0); }
 function fazerLogout() { auth.signOut().then(() => window.location.replace("index.html")); }
 document.getElementById("btnLED").onclick = () => { db.ref("/led").get().then(s => db.ref("/led").set(s.val() == 1 ? 0 : 1)); };
 
@@ -363,9 +372,8 @@ auth.onAuthStateChanged(user => {
   else {
     db.ref("/config_alertas").on("value", s => { 
         if(s.val()) { 
-            config = s.val(); 
+            config = { ...config, ...s.val() }; 
             document.getElementById("countEmailDisplay").innerText = config.contadorAlertas || 0;
-            // Atualiza exibição na tela principal
             document.getElementById("dispCliente").innerText = config.cliente || "Não definido";
             document.getElementById("dispLocal").innerText = config.local || "Não definido";
         } 
