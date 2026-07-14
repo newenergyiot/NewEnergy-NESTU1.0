@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Central NewEnergy - Admin</title>
-    <!-- Tailwind CSS para um design limpo e moderno -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Firebase App e Database (SDK v9 Compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -23,7 +22,6 @@
                 <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
                 Sincronizando servidores...
             </div>
-            <!-- Botão de Adicionar Sensor -->
             <button onclick="abrirModalCadastro()" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl text-sm transition-all shadow-sm">
                 <span class="text-lg leading-none">+</span> Novo Sensor
             </button>
@@ -37,81 +35,51 @@
         </div>
     </main>
 
-    <!-- ======================================================= -->
-    <!-- MODAL DE CADASTRO / EDIÇÃO DE SENSOR                    -->
-    <!-- ======================================================= -->
+    <!-- MODAL DE CADASTRO / EDIÇÃO -->
     <div id="modal-cadastro" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 border border-slate-100">
             <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
                 <h2 id="modal-titulo" class="text-lg font-bold text-slate-800">Cadastrar Novo Dispositivo</h2>
-                <button type="button" onclick="fecharModalCadastro()" class="text-slate-400 hover:text-slate-600 font-semibold text-sm">
-                    Cancelar
-                </button>
+                <button type="button" onclick="fecharModalCadastro()" class="text-slate-400 hover:text-slate-600 font-semibold text-sm">Cancelar</button>
             </div>
 
             <form id="form-cadastro" onsubmit="salvarNovoSensor(event)" class="space-y-4">
-                <!-- ID do Sensor (Chave no Firebase) -->
                 <div>
-                    <label for="cad-id" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">ID Único do Sensor (Ex: SENSOR_02)</label>
-                    <input type="text" id="cad-id" required placeholder="SENSOR_02" 
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono disabled:opacity-60 disabled:cursor-not-allowed">
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">ID Único do Sensor (Ex: SENSOR_02)</label>
+                    <input type="text" id="cad-id" required placeholder="SENSOR_02" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono disabled:opacity-60 disabled:cursor-not-allowed">
                 </div>
-
-                <!-- Nome do Local / Equipamento -->
                 <div>
-                    <label for="cad-nome" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Local / Equipamento (Ex: ELEKTA - PRECISE)</label>
-                    <input type="text" id="cad-nome" required placeholder="ELEKTA - PRECISE" 
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Local / Equipamento (Ex: VARIAN - 600C)</label>
+                    <input type="text" id="cad-nome" required placeholder="VARIAN - 600C" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-
-                <!-- Nome do Cliente -->
                 <div>
-                    <label for="cad-cliente" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Nome do Cliente (Ex: FUNDAÇÃO JORGE DINO)</label>
-                    <input type="text" id="cad-cliente" required placeholder="FUNDAÇÃO JORGE DINO" 
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Nome do Cliente</label>
+                    <input type="text" id="cad-cliente" required placeholder="CLINICA VETERINARIA" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-
-                <!-- Rota da Temperatura -->
                 <div>
-                    <label for="cad-rota-temp" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Temperatura (Ex: sensores/SENSOR_02/temperatura)</label>
-                    <input type="text" id="cad-rota-temp" required placeholder="sensores/SENSOR_02/temperatura" 
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Temperatura</label>
+                    <input type="text" id="cad-rota-temp" required placeholder="temp" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                 </div>
-
-                <!-- Rota da Umidade -->
                 <div>
-                    <label for="cad-rota-hum" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Umidade (Ex: sensores/SENSOR_02/umidade)</label>
-                    <input type="text" id="cad-rota-hum" required placeholder="sensores/SENSOR_02/umidade" 
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Umidade</label>
+                    <input type="text" id="cad-rota-hum" required placeholder="hum" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                 </div>
-
-                <!-- Rota do Last Seen (Sinal de Vida) -->
                 <div>
-                    <label for="cad-rota-seen" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota do Last Seen (Ex: sensores/SENSOR_02/timestamp)</label>
-                    <input type="text" id="cad-rota-seen" required placeholder="sensores/SENSOR_02/timestamp" 
-                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota do Last Seen</label>
+                    <input type="text" id="cad-rota-seen" required placeholder="last_seen" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                 </div>
-
                 <div class="pt-4">
-                    <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md">
-                        Salvar e Iniciar Monitoramento
-                    </button>
+                    <button type="submit" id="btn-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md">Salvar e Iniciar Monitoramento</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        // 1. Configuração do seu Firebase (Apontada para a URL do seu DB)
-        const firebaseConfig = {
-            databaseURL: "https://oficial-688e8-default-rtdb.firebaseio.com"
-        };
-
-        // Inicializa o Firebase
+        const firebaseConfig = { databaseURL: "https://oficial-688e8-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Elementos da Tela
         const gridSensores = document.getElementById('grid-sensores');
         const statusConexao = document.getElementById('status-conexao');
         const modalCadastro = document.getElementById('modal-cadastro');
@@ -120,10 +88,8 @@
         const btnSubmit = document.getElementById('btn-submit');
         const inputId = document.getElementById('cad-id');
 
-        // Estado do Modal (criar ou editar)
         let modoEdicao = false;
 
-        // Função para calcular se o sensor está online (limite de 1 minuto)
         function verificarOnline(lastSeenTimestamp) {
             if (!lastSeenTimestamp) return false;
             const agora = Date.now();
@@ -131,7 +97,6 @@
             return diferenca < 60000; 
         }
 
-        // Helper para lidar com diferentes formatos que o ESP32 pode enviar nas chaves
         function parseTelemetria(val) {
             if (val === null || val === undefined) return null;
             if (typeof val === 'object') {
@@ -143,25 +108,22 @@
             return parseFloat(val);
         }
 
-        // 2. Ouvinte em tempo real para a lista de sensores cadastrados
+        // Carrega sensores cadastrados e gera o link dinâmico
         db.ref('central_sensores').on('value', (snapshot) => {
             if (!snapshot.exists()) {
-                gridSensores.innerHTML = `<p class="text-slate-500 col-span-full text-center py-12">Nenhum sensor cadastrado no sistema.</p>`;
+                gridSensores.innerHTML = `<p class="text-slate-500 col-span-full text-center py-12">Nenhum sensor cadastrado.</p>`;
                 statusConexao.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Sem dados`;
                 return;
             }
 
-            statusConexao.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Conectado ao Firebase`;
+            statusConexao.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Conectado`;
             gridSensores.innerHTML = ''; 
 
             snapshot.forEach((childSnapshot) => {
                 const sensorKey = childSnapshot.key; 
                 const sensorConf = childSnapshot.val(); 
-
-                // Transforma as propriedades em strings seguras para passar no HTML
                 const stringfiedConfig = encodeURIComponent(JSON.stringify({key: sensorKey, ...sensorConf}));
 
-                // Cria o elemento do Card com botões de Editar/Excluir e o novo botão "Ver Painel Detalhado"
                 const cardHtml = `
                     <div id="card-${sensorKey}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow relative group flex flex-col justify-between h-full">
                         <div>
@@ -171,13 +133,11 @@
                                     <h3 class="text-lg font-bold text-slate-800 mt-0.5">${sensorConf.nome || 'Sensor Sem Nome'}</h3>
                                     <p class="text-xs text-slate-500">Cliente: <span class="font-semibold text-slate-700">${sensorConf.clientID || 'Não Definido'}</span></p>
                                 </div>
-                                
-                                <!-- Ações Rápidas (Editar / Excluir) -->
-                                <div class="absolute top-4 right-4 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                                    <button onclick="prepararEdicao('${stringfiedConfig}')" class="p-1.5 bg-slate-100 hover:bg-blue-50 text-slate-500 hover:text-blue-600 rounded-lg transition-colors" title="Editar Configurações">
+                                <div class="absolute top-4 right-4 flex items-center gap-1 opacity-85 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="prepararEdicao('${stringfiedConfig}')" class="p-1.5 bg-slate-100 hover:bg-blue-50 text-slate-500 hover:text-blue-600 rounded-lg transition-colors">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"></path></svg>
                                     </button>
-                                    <button onclick="excluirSensor('${sensorKey}')" class="p-1.5 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg transition-colors" title="Excluir Sensor">
+                                    <button onclick="excluirSensor('${sensorKey}')" class="p-1.5 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg transition-colors">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     </button>
                                 </div>
@@ -196,20 +156,18 @@
 
                             <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
                                 <div class="flex items-center gap-1.5">
-                                    <span id="status-dot-${sensorKey}" class="w-2 h-2 rounded-full bg-slate-300"></span>
+                                    <span id="status-dot-${sensorKey}" class="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
                                     <span id="status-text-${sensorKey}" class="font-medium text-slate-500">Offline</span>
                                 </div>
                                 <span id="lastseen-${sensorKey}" class="font-medium text-slate-600">--</span>
                             </div>
                         </div>
 
-                        <!-- Botão de Acesso ao Painel Individual -->
+                        <!-- O SEGREDINHO AQUI: Passamos 'sensorKey' na URL dinamicamente -->
                         <div class="mt-5 pt-4 border-t border-slate-100">
-                            <a href="painel.html?id=${sensorKey}" target="_blank" class="w-full inline-flex justify-center items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-2.5 px-4 rounded-xl text-xs transition-all shadow-sm tracking-wide">
+                            <a href="painel.html?id=${sensorKey}" target="_blank" class="w-full inline-flex justify-center items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold py-2.5 px-4 rounded-xl text-xs transition-all tracking-wide">
                                 <span>Ver Painel Detalhado</span>
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"></path>
-                                </svg>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"></path></svg>
                             </a>
                         </div>
                     </div>
@@ -217,7 +175,7 @@
                 
                 gridSensores.insertAdjacentHTML('beforeend', cardHtml);
 
-                // 3. Ouvintes dinâmicos que escutam as rotas em tempo real
+                // Monitores dinâmicos das rotas individuais
                 if (sensorConf.rotaTemp) {
                     db.ref(sensorConf.rotaTemp).on('value', (dataSnapshot) => {
                         const tempEl = document.getElementById(`temp-${sensorKey}`);
@@ -274,14 +232,7 @@
                     });
                 }
             });
-        }, (error) => {
-            console.error("Erro ao ler dados do Firebase:", error);
-            statusConexao.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Erro de Permissão`;
         });
-
-        // =======================================================
-        // OPERAÇÕES: CADASTRO, EDIÇÃO E EXCLUSÃO
-        // =======================================================
 
         function abrirModalCadastro() {
             modoEdicao = false;
@@ -299,11 +250,9 @@
 
         function prepararEdicao(encodedConfig) {
             const config = JSON.parse(decodeURIComponent(encodedConfig));
-            
             modoEdicao = true;
             modalTitulo.textContent = `Editar Sensor: ${config.key}`;
             btnSubmit.textContent = "Atualizar Configurações";
-            
             inputId.value = config.key;
             inputId.disabled = true;
 
@@ -336,29 +285,21 @@
 
             db.ref(`central_sensores/${idSensor}`).set(dadosCadastro)
                 .then(() => {
-                    alert(modoEdicao ? `Configurações de ${idSensor} atualizadas!` : `Sensor ${idSensor} cadastrado com sucesso!`);
+                    alert(modoEdicao ? `Configurações salvas!` : `Sensor cadastrado com sucesso!`);
                     fecharModalCadastro();
                 })
                 .catch((error) => {
-                    console.error("Erro no Firebase: ", error);
-                    alert("Ocorreu um erro ao gravar as informações. Verifique sua conexão ou regras.");
+                    console.error("Erro: ", error);
+                    alert("Erro ao gravar informações. Verifique sua conexão ou permissões.");
                 });
         }
 
         function excluirSensor(sensorKey) {
-            const confirmacao = confirm(`Atenção: Tem certeza de que deseja remover o dispositivo ${sensorKey} do sistema?\n\nOs dados de telemetria continuarão salvos, mas ele não será mais monitorado neste painel.`);
-            
-            if (confirmacao) {
+            if (confirm(`Remover ${sensorKey} do monitoramento?`)) {
                 db.ref(`central_sensores/${sensorKey}`).off();
-                
                 db.ref(`central_sensores/${sensorKey}`).remove()
-                    .then(() => {
-                        alert(`Sensor ${sensorKey} excluído com sucesso.`);
-                    })
-                    .catch((error) => {
-                        console.error("Erro ao remover: ", error);
-                        alert("Erro ao excluir. Verifique sua conexão.");
-                    });
+                    .then(() => alert(`Sensor removido.`))
+                    .catch(() => alert("Erro ao excluir."));
             }
         }
     </script>
