@@ -44,7 +44,7 @@
         <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 border border-slate-100">
             <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
                 <h2 id="modal-titulo" class="text-lg font-bold text-slate-800">Cadastrar Novo Dispositivo</h2>
-                <button onclick="fecharModalCadastro()" class="text-slate-400 hover:text-slate-600 font-semibold text-sm">
+                <button type="button" onclick="fecharModalCadastro()" class="text-slate-400 hover:text-slate-600 font-semibold text-sm">
                     Cancelar
                 </button>
             </div>
@@ -52,42 +52,42 @@
             <form id="form-cadastro" onsubmit="salvarNovoSensor(event)" class="space-y-4">
                 <!-- ID do Sensor (Chave no Firebase) -->
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">ID Único do Sensor (Ex: SENSOR_02)</label>
+                    <label for="cad-id" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">ID Único do Sensor (Ex: SENSOR_02)</label>
                     <input type="text" id="cad-id" required placeholder="SENSOR_02" 
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono disabled:opacity-60 disabled:cursor-not-allowed">
                 </div>
 
                 <!-- Nome do Local / Equipamento -->
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Local / Equipamento (Ex: ELEKTA - PRECISE)</label>
+                    <label for="cad-nome" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Local / Equipamento (Ex: ELEKTA - PRECISE)</label>
                     <input type="text" id="cad-nome" required placeholder="ELEKTA - PRECISE" 
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <!-- Nome do Cliente -->
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Nome do Cliente (Ex: FUNDAÇÃO JORGE DINO)</label>
+                    <label for="cad-cliente" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Nome do Cliente (Ex: FUNDAÇÃO JORGE DINO)</label>
                     <input type="text" id="cad-cliente" required placeholder="FUNDAÇÃO JORGE DINO" 
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <!-- Rota da Temperatura -->
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Temperatura (Ex: sensores/SENSOR_02/temperatura)</label>
+                    <label for="cad-rota-temp" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Temperatura (Ex: sensores/SENSOR_02/temperatura)</label>
                     <input type="text" id="cad-rota-temp" required placeholder="sensores/SENSOR_02/temperatura" 
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                 </div>
 
                 <!-- Rota da Umidade -->
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Umidade (Ex: sensores/SENSOR_02/umidade)</label>
+                    <label for="cad-rota-hum" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Umidade (Ex: sensores/SENSOR_02/umidade)</label>
                     <input type="text" id="cad-rota-hum" required placeholder="sensores/SENSOR_02/umidade" 
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                 </div>
 
                 <!-- Rota do Last Seen (Sinal de Vida) -->
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota do Last Seen (Ex: sensores/SENSOR_02/timestamp)</label>
+                    <label for="cad-rota-seen" class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota do Last Seen (Ex: sensores/SENSOR_02/timestamp)</label>
                     <input type="text" id="cad-rota-seen" required placeholder="sensores/SENSOR_02/timestamp" 
                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                 </div>
@@ -102,7 +102,7 @@
     </div>
 
     <script>
-        // 1. Configuração do seu Firebase
+        // 1. Configuração do seu Firebase (Apontada para a URL do seu DB)
         const firebaseConfig = {
             databaseURL: "https://oficial-688e8-default-rtdb.firebaseio.com"
         };
@@ -131,6 +131,19 @@
             return diferenca < 60000; 
         }
 
+        // Helper para lidar com diferentes formatos que o ESP32 pode enviar nas chaves
+        function parseTelemetria(val) {
+            if (val === null || val === undefined) return null;
+            if (typeof val === 'object') {
+                if (val.temp !== undefined) return parseFloat(val.temp);
+                if (val.hum !== undefined) return parseFloat(val.hum);
+                if (val.valor !== undefined) return parseFloat(val.valor);
+                // Caso seja enviado um objeto vazio ou não identificado
+                return null;
+            }
+            return parseFloat(val);
+        }
+
         // 2. Ouvinte em tempo real para a lista de sensores cadastrados
         db.ref('central_sensores').on('value', (snapshot) => {
             if (!snapshot.exists()) {
@@ -139,7 +152,7 @@
                 return;
             }
 
-            statusConexao.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Conectado ao Firebase`;
+            statusConexao.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Conectado ao Firebase`;
             gridSensores.innerHTML = ''; 
 
             snapshot.forEach((childSnapshot) => {
@@ -193,22 +206,14 @@
                 
                 gridSensores.insertAdjacentHTML('beforeend', cardHtml);
 
-                // 3. Ouvintes dinâmicos que escutam as rotas reais apontadas no cadastro
-                
+                // 3. Ouvintes dinâmicos que escutam as rotas em tempo real
                 if (sensorConf.rotaTemp) {
                     db.ref(sensorConf.rotaTemp).on('value', (dataSnapshot) => {
                         const tempEl = document.getElementById(`temp-${sensorKey}`);
                         if (tempEl) {
-                            const val = dataSnapshot.val();
-                            if (val !== null) {
-                                if (typeof val === 'object' && val.temp !== undefined) {
-                                    tempEl.textContent = `${parseFloat(val.temp).toFixed(1)} °C`;
-                                } else {
-                                    tempEl.textContent = `${parseFloat(val).toFixed(1)} °C`;
-                                }
-                            } else {
-                                tempEl.textContent = '-- °C';
-                            }
+                            const rawVal = dataSnapshot.val();
+                            const parsedVal = parseTelemetria(rawVal);
+                            tempEl.textContent = parsedVal !== null ? `${parsedVal.toFixed(1)} °C` : '-- °C';
                         }
                     });
                 }
@@ -217,16 +222,9 @@
                     db.ref(sensorConf.rotaHum).on('value', (dataSnapshot) => {
                         const humEl = document.getElementById(`hum-${sensorKey}`);
                         if (humEl) {
-                            const val = dataSnapshot.val();
-                            if (val !== null) {
-                                if (typeof val === 'object' && val.hum !== undefined) {
-                                    humEl.textContent = `${parseFloat(val.hum).toFixed(1)} %`;
-                                } else {
-                                    humEl.textContent = `${parseFloat(val).toFixed(1)} %`;
-                                }
-                            } else {
-                                humEl.textContent = '-- %';
-                            }
+                            const rawVal = dataSnapshot.val();
+                            const parsedVal = parseTelemetria(rawVal);
+                            humEl.textContent = parsedVal !== null ? `${parsedVal.toFixed(1)} %` : '-- %';
                         }
                     });
                 }
@@ -288,7 +286,6 @@
             formCadastro.reset();
         }
 
-        // Preenche o formulário com as configurações do sensor para editar
         function prepararEdicao(encodedConfig) {
             const config = JSON.parse(decodeURIComponent(encodedConfig));
             
@@ -296,7 +293,6 @@
             modalTitulo.textContent = `Editar Sensor: ${config.key}`;
             btnSubmit.textContent = "Atualizar Configurações";
             
-            // Preenche e desabilita o campo de ID (já que o ID do nó no Firebase é imutável)
             inputId.value = config.key;
             inputId.disabled = true;
 
@@ -309,7 +305,6 @@
             modalCadastro.classList.remove('hidden');
         }
 
-        // Salva uma inserção ou edição
         function salvarNovoSensor(event) {
             event.preventDefault();
 
@@ -339,12 +334,10 @@
                 });
         }
 
-        // Exclui o sensor de monitoramento
         function excluirSensor(sensorKey) {
             const confirmacao = confirm(`Atenção: Tem certeza de que deseja remover o dispositivo ${sensorKey} do sistema?\n\nOs dados de telemetria continuarão salvos, mas ele não será mais monitorado neste painel.`);
             
             if (confirmacao) {
-                // Desconecta os ouvintes do Firebase antes de deletar o nó
                 db.ref(`central_sensores/${sensorKey}`).off();
                 
                 db.ref(`central_sensores/${sensorKey}`).remove()
