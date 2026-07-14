@@ -13,14 +13,20 @@
 <body class="bg-slate-50 font-sans min-h-screen">
 
     <!-- Header -->
-    <header class="bg-white border-b border-slate-200 px-6 py-4 shadow-sm flex justify-between items-center">
+    <header class="bg-white border-b border-slate-200 px-6 py-4 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 tracking-tight">CENTRAL NEWENERGY</h1>
             <p class="text-sm text-blue-600 font-medium">Monitoramento Geral de Infraestrutura Ativa</p>
         </div>
-        <div id="status-conexao" class="text-sm text-slate-500 font-medium flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-            Sincronizando servidores...
+        <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+            <div id="status-conexao" class="text-sm text-slate-500 font-medium flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                Sincronizando servidores...
+            </div>
+            <!-- Botão de Adicionar Sensor -->
+            <button onclick="abrirModalCadastro()" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl text-sm transition-all shadow-sm">
+                <span class="text-lg leading-none">+</span> Novo Sensor
+            </button>
         </div>
     </header>
 
@@ -30,6 +36,70 @@
             <!-- Os cards dos sensores serão injetados dinamicamente aqui -->
         </div>
     </main>
+
+    <!-- ======================================================= -->
+    <!-- MODAL DE CADASTRO DE NOVO SENSOR                        -->
+    <!-- ======================================================= -->
+    <div id="modal-cadastro" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 border border-slate-100">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
+                <h2 class="text-lg font-bold text-slate-800">Cadastrar Novo Dispositivo</h2>
+                <button onclick="fecharModalCadastro()" class="text-slate-400 hover:text-slate-600 font-semibold text-sm">
+                    Cancelar
+                </button>
+            </div>
+
+            <form id="form-cadastro" onsubmit="salvarNovoSensor(event)" class="space-y-4">
+                <!-- ID do Sensor (Chave no Firebase) -->
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">ID Único do Sensor (Ex: SENSOR_02)</label>
+                    <input type="text" id="cad-id" required placeholder="SENSOR_02" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                </div>
+
+                <!-- Nome do Local -->
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Local / Equipamento (Ex: ELEKTA - PRECISE)</label>
+                    <input type="text" id="cad-nome" required placeholder="ELEKTA - PRECISE" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- Nome do Cliente -->
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Nome do Cliente (Ex: FUNDAÇÃO JORGE DINO)</label>
+                    <input type="text" id="cad-cliente" required placeholder="FUNDAÇÃO JORGE DINO" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- Rota da Temperatura -->
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Temperatura no DB (Ex: sensores/SENSOR_02/temperatura)</label>
+                    <input type="text" id="cad-rota-temp" required placeholder="sensores/SENSOR_02/temperatura" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                </div>
+
+                <!-- Rota da Umidade -->
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota de Umidade no DB (Ex: sensores/SENSOR_02/umidade)</label>
+                    <input type="text" id="cad-rota-hum" required placeholder="sensores/SENSOR_02/umidade" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                </div>
+
+                <!-- Rota do Last Seen (Sinal de Vida) -->
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 tracking-wider mb-1">Rota do Last Seen (Ex: sensores/SENSOR_02/timestamp)</label>
+                    <input type="text" id="cad-rota-seen" required placeholder="sensores/SENSOR_02/timestamp" 
+                           class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md">
+                        Salvar e Iniciar Monitoramento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
         // 1. Configuração do seu Firebase (Mantendo as credenciais padrão do seu projeto)
@@ -44,6 +114,8 @@
         // Elementos da Tela
         const gridSensores = document.getElementById('grid-sensores');
         const statusConexao = document.getElementById('status-conexao');
+        const modalCadastro = document.getElementById('modal-cadastro');
+        const formCadastro = document.getElementById('form-cadastro');
 
         // Função para calcular se o sensor está online (limite de 1 minuto / 60000ms)
         function verificarOnline(lastSeenTimestamp) {
@@ -111,7 +183,6 @@
                         if (tempEl) {
                             const val = dataSnapshot.val();
                             if (val !== null) {
-                                // Se for um objeto que contém 'temp' dentro, lê o objeto. Se não, lê direto.
                                 if (typeof val === 'object' && val.temp !== undefined) {
                                     tempEl.textContent = `${parseFloat(val.temp).toFixed(1)} °C`;
                                 } else {
@@ -182,6 +253,51 @@
             console.error("Erro ao ler dados do Firebase:", error);
             statusConexao.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Erro de Permissão`;
         });
+
+        // =======================================================
+        // FUNÇÕES PARA CADASTRO DE NOVO DISPOSITIVO
+        // =======================================================
+
+        function abrirModalCadastro() {
+            modalCadastro.classList.remove('hidden');
+        }
+
+        function fecharModalCadastro() {
+            modalCadastro.classList.add('hidden');
+            formCadastro.reset(); // Limpa as entradas
+        }
+
+        function salvarNovoSensor(event) {
+            event.preventDefault(); // Impede o recarregamento tradicional da página
+
+            // Captura os valores digitados no formulário
+            const idSensor = document.getElementById('cad-id').value.trim().toUpperCase().replace(/\s+/g, '_');
+            const nomeLocal = document.getElementById('cad-nome').value.trim();
+            const cliente = document.getElementById('cad-cliente').value.trim();
+            const rotaTemp = document.getElementById('cad-rota-temp').value.trim();
+            const rotaHum = document.getElementById('cad-rota-hum').value.trim();
+            const rotaSeen = document.getElementById('cad-rota-seen').value.trim();
+
+            // Monta o objeto de configuração idêntico à sua estrutura atual do Firebase
+            const novoCadastro = {
+                clientID: cliente,
+                nome: nomeLocal,
+                rotaHum: rotaHum,
+                rotaLastSeen: rotaSeen,
+                rotaTemp: rotaTemp
+            };
+
+            // Envia para o Firebase Realtime Database
+            db.ref(`central_sensores/${idSensor}`).set(novoCadastro)
+                .then(() => {
+                    alert(`Sensor ${idSensor} cadastrado com sucesso!`);
+                    fecharModalCadastro();
+                })
+                .catch((error) => {
+                    console.error("Erro ao cadastrar novo dispositivo: ", error);
+                    alert("Erro ao gravar no banco. Verifique suas regras de segurança ou conexão.");
+                });
+        }
     </script>
 </body>
 </html>
