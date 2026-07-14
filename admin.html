@@ -1,159 +1,170 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>NewEnergy Master | Central de Servidores</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --brand-primary: #1a365d;
-      --brand-accent: #007aff;
-      --bg-body: #f1f5f9;
-      --card-bg: #ffffff;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
-      --on: #10b981;
-      --off: #e11d48;
-      --shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    }
-    body {
-      margin: 0; font-family: 'Inter', sans-serif;
-      background: var(--bg-body); color: var(--text-main);
-      padding: 30px;
-    }
-    .container { max-width: 1200px; margin: 0 auto; }
-    header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px;
-    }
-    h1 { margin: 0; font-size: 28px; font-weight: 800; color: var(--brand-primary); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-    .card-sensor {
-      background: var(--card-bg); border-radius: 12px; padding: 20px;
-      box-shadow: var(--shadow); border: 1px solid #e2e8f0; position: relative;
-    }
-    .card-sensor.offline { border-left: 5px solid var(--off); }
-    .card-sensor.online { border-left: 5px solid var(--on); }
-    .sensor-nome { font-size: 16px; font-weight: 700; margin: 0 0 5px 0; color: var(--brand-primary); }
-    .sensor-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 15px; }
-    .leituras { display: flex; justify-content: space-between; background: #f8fafc; padding: 12px; border-radius: 8px; }
-    .leitura-box { text-align: center; flex: 1; }
-    .leitura-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
-    .leitura-valor { font-size: 20px; font-weight: 700; color: var(--brand-primary); margin-top: 4px; }
-    .status-indicator {
-      position: absolute; top: 20px; right: 20px; font-size: 10px;
-      font-weight: 700; padding: 4px 8px; border-radius: 12px;
-    }
-    .status-indicator.online { background: #ecfdf5; color: var(--on); }
-    .status-indicator.offline { background: #fff1f2; color: var(--off); }
-  </style>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central NewEnergy - Admin</title>
+    <!-- Tailwind CSS para um design limpo e moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase App e Database (SDK v9 Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
-<body>
+<body class="bg-slate-50 font-sans min-h-screen">
 
-<div class="container">
-  <header>
-    <div>
-      <h1>CENTRAL NEWENERGY</h1>
-      <p style="margin: 5px 0 0 0; color: var(--brand-accent); font-weight: 600;">Monitoramento Geral de Infraestrutura Ativa</p>
-    </div>
-    <div style="text-align: right;">
-      <span id="contadores" style="font-size: 14px; font-weight: 600; color: var(--text-muted);">Sincronizando servidores...</span>
-    </div>
-  </header>
-
-  <div class="grid" id="gridSensores">
-    <!-- Os cartões de todos os sensores conectados vão aparecer aqui dinamicamente -->
-  </div>
-</div>
-
-<script>
-// Configuração do seu Firebase Realtime Database
-const firebaseConfig = {
-  apiKey: "AIzaSyB5FnkQiFi3gn9Iup2KNcbrKxWd-0Jjo6Y",
-  authDomain: "oficial-688e8.firebaseapp.com",
-  databaseURL: "https://oficial-688e8-default-rtdb.firebaseio.com/",
-  projectId: "oficial-688e8"
-};
-
-// Inicializa o Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-// Escuta a lista centralizada de sensores
-db.ref("/central_sensores").on("value", snapshot => {
-  const sensores = snapshot.val();
-  const grid = document.getElementById("gridSensores");
-  grid.innerHTML = "";
-  
-  if(!sensores) {
-    grid.innerHTML = "<p>Nenhum sensor cadastrado na central master.</p>";
-    return;
-  }
-
-  let total = 0;
-  let online = 0;
-
-  Object.keys(sensores).forEach(id => {
-    const sConf = sensores[id];
-    total++;
-
-    // Criar elemento do card na tela
-    const card = document.createElement("div");
-    card.className = "card-sensor";
-    card.id = `card_${id}`;
-    card.innerHTML = `
-      <div class="sensor-nome">${sConf.nome}</div>
-      <div class="sensor-meta">ID: ${id} | Cliente: ${sConf.clientID}</div>
-      <div class="status-indicator" id="status_${id}">Carregando...</div>
-      <div class="leituras">
-        <div class="leitura-box" style="border-right: 1px solid #e2e8f0;">
-          <div class="leitura-label">Temperatura</div>
-          <div class="leitura-valor" id="temp_${id}">--°C</div>
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 px-6 py-4 shadow-sm flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">CENTRAL NEWENERGY</h1>
+            <p class="text-sm text-blue-600 font-medium">Monitoramento Geral de Infraestrutura Ativa</p>
         </div>
-        <div class="leitura-box">
-          <div class="leitura-label">Umidade</div>
-          <div class="leitura-valor" id="hum_${id}">--%</div>
+        <div id="status-conexao" class="text-sm text-slate-500 font-medium flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+            Sincronizando servidores...
         </div>
-      </div>
-    `;
-    grid.appendChild(card);
+    </header>
 
-    // Escutar em tempo real as variáveis individuais baseadas na rota cadastrada
-    db.ref(sConf.rotaTemp).on("value", s => {
-      document.getElementById(`temp_${id}`).innerText = s.val() ? parseFloat(s.val()).toFixed(1) + "°C" : "--°C";
-    });
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-6">
+        <div id="grid-sensores" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Os cards dos sensores serão injetados dinamicamente aqui -->
+        </div>
+    </main>
 
-    db.ref(sConf.rotaHum).on("value", s => {
-      document.getElementById(`hum_${id}`).innerText = s.val() ? parseFloat(s.val()).toFixed(1) + "%" : "--%";
-    });
+    <script>
+        // 1. Configuração do seu Firebase (Mantendo as credenciais padrão do seu projeto)
+        const firebaseConfig = {
+            databaseURL: "https://oficial-688e8-default-rtdb.firebaseio.com"
+        };
 
-    // Escuta batimento cardíaco (last_seen) para determinar online/offline de forma independente
-    db.ref(sConf.rotaLastSeen).on("value", s => {
-      const ts = s.val();
-      
-      // Se o timestamp não atualizou nos últimos 25 segundos, considera offline
-      const isOff = !ts || (Math.floor(Date.now() / 1000) - ts) > 25;
-      const statusIndicator = document.getElementById(`status_${id}`);
-      const cardEl = document.getElementById(`card_${id}`);
-      
-      if(isOff) {
-        statusIndicator.innerText = "OFFLINE";
-        statusIndicator.className = "status-indicator offline";
-        cardEl.className = "card-sensor offline";
-      } else {
-        statusIndicator.innerText = "ONLINE";
-        statusIndicator.className = "status-indicator online";
-        cardEl.className = "card-sensor online";
-        online++;
-      }
-      
-      document.getElementById("contadores").innerText = `Sensores: ${total} | Ativos: ${online} | Offline: ${total - online}`;
-    });
-  });
-});
-</script>
+        // Inicializa o Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Elementos da Tela
+        const gridSensores = document.getElementById('grid-sensores');
+        const statusConexao = document.getElementById('status-conexao');
+
+        // Função para calcular se o sensor está online (limite de 1 minuto / 60000ms)
+        function verificarOnline(lastSeenTimestamp) {
+            if (!lastSeenTimestamp) return false;
+            const agora = Date.now();
+            const diferenca = agora - (lastSeenTimestamp * 1000); // Se o last_seen estiver em segundos, multiplica por 1000
+            return diferenca < 60000; 
+        }
+
+        // 2. Ouvinte em tempo real para a lista de sensores cadastrados
+        db.ref('central_sensores').on('value', (snapshot) => {
+            if (!snapshot.exists()) {
+                gridSensores.innerHTML = `<p class="text-slate-500 col-span-full text-center py-12">Nenhum sensor cadastrado no sistema.</p>`;
+                statusConexao.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Sem dados`;
+                return;
+            }
+
+            statusConexao.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Conectado ao Firebase`;
+            gridSensores.innerHTML = ''; // Limpa o grid para reconstruir
+
+            snapshot.forEach((childSnapshot) => {
+                const sensorKey = childSnapshot.key; // Ex: "sensor_01"
+                const sensorConf = childSnapshot.val(); // Contém nome, rotaTemp, rotaHum, rotaLastSeen, clientID
+
+                // Cria o elemento do Card na tela com valores iniciais de carregamento
+                const cardHtml = `
+                    <div id="card-${sensorKey}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">ID: ${sensorKey}</span>
+                                <h3 class="text-lg font-bold text-slate-800 mt-0.5">${sensorConf.nome || 'Sensor Sem Nome'}</h3>
+                                <p class="text-xs text-slate-500">Cliente: <span class="font-semibold text-slate-700">${sensorConf.clientID || 'Não Definido'}</span></p>
+                            </div>
+                            <span id="status-badge-${sensorKey}" class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                                Carregando...
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+                            <div class="bg-slate-50 rounded-lg p-3 text-center">
+                                <span class="text-xs font-medium text-slate-500">Temperatura</span>
+                                <div id="temp-${sensorKey}" class="text-2xl font-extrabold text-slate-800 mt-1">-- °C</div>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-3 text-center">
+                                <span class="text-xs font-medium text-slate-500">Umidade</span>
+                                <div id="hum-${sensorKey}" class="text-2xl font-extrabold text-slate-800 mt-1">-- %</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
+                            <span>Sinal do Dispositivo:</span>
+                            <span id="lastseen-${sensorKey}" class="font-medium text-slate-600">--</span>
+                        </div>
+                    </div>
+                `;
+                
+                gridSensores.insertAdjacentHTML('beforeend', cardHtml);
+
+                // 3. Ouvintes dinâmicos que escutam as rotas reais apontadas no cadastro
+                
+                // Monitora a Temperatura em tempo real
+                if (sensorConf.rotaTemp) {
+                    db.ref(sensorConf.rotaTemp).on('value', (dataSnapshot) => {
+                        const tempEl = document.getElementById(`temp-${sensorKey}`);
+                        if (tempEl) {
+                            const val = dataSnapshot.val();
+                            tempEl.textContent = val !== null ? `${parseFloat(val).toFixed(1)} °C` : '-- °C';
+                        }
+                    });
+                }
+
+                // Monitora a Umidade em tempo real
+                if (sensorConf.rotaHum) {
+                    db.ref(sensorConf.rotaHum).on('value', (dataSnapshot) => {
+                        const humEl = document.getElementById(`hum-${sensorKey}`);
+                        if (humEl) {
+                            const val = dataSnapshot.val();
+                            humEl.textContent = val !== null ? `${parseFloat(val).toFixed(1)} %` : '-- %';
+                        }
+                    });
+                }
+
+                // Monitora o Last Seen e atualiza o status Online/Offline do sensor
+                if (sensorConf.rotaLastSeen) {
+                    db.ref(sensorConf.rotaLastSeen).on('value', (dataSnapshot) => {
+                        const lastSeenVal = dataSnapshot.val();
+                        const lastSeenEl = document.getElementById(`lastseen-${sensorKey}`);
+                        const badgeEl = document.getElementById(`status-badge-${sensorKey}`);
+
+                        if (lastSeenVal) {
+                            // Atualiza a exibição da última hora vista
+                            const data = new Date(lastSeenVal * 1000);
+                            const horaFormatada = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                            if (lastSeenEl) lastSeenEl.textContent = horaFormatada;
+
+                            // Função que executa a cada 10s para re-verificar se o sensor caiu
+                            const atualizarStatusOnline = () => {
+                                const isOnline = verificarOnline(lastSeenVal);
+                                if (badgeEl) {
+                                    if (isOnline) {
+                                        badgeEl.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 animate-pulse";
+                                        badgeEl.textContent = "ONLINE";
+                                    } else {
+                                        badgeEl.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700";
+                                        badgeEl.textContent = "OFFLINE";
+                                    }
+                                }
+                            };
+
+                            atualizarStatusOnline();
+                            // Deixa um timer rodando localmente para mudar para OFFLINE caso pare de atualizar
+                            if (window[`timer_${sensorKey}`]) clearInterval(window[`timer_${sensorKey}`]);
+                            window[`timer_${sensorKey}`] = setInterval(atualizarStatusOnline, 10000);
+                        }
+                    });
+                }
+            });
+        }, (error) => {
+            console.error("Erro ao ler dados do Firebase:", error);
+            statusConexao.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Erro de Permissão`;
+        });
+    </script>
 </body>
 </html>
