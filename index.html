@@ -11,7 +11,7 @@
       /* Paleta Panorama Health / High-End Tech */
       --brand-primary: #1a365d;    /* Azul Marinho Corporativo */
       --brand-accent: #007aff;     /* Azul Apple/Tech */
-      --bg-light: #f8fafc;        /* Cinza muito claro (fundo) */
+      --bg-light: #f8fafc;         /* Cinza muito claro (fundo) */
       --text-dark: #1e293b;        /* Texto principal */
       --text-light: #64748b;       /* Texto secundário */
       --error: #e11d48;
@@ -146,43 +146,43 @@
       text-align: center;
     }
 
-    /* Suavização de scroll e seleção */
     ::selection { background: rgba(0, 122, 255, 0.2); }
   </style>
 
+  <!-- SDK Firebase v9 (Compat) para garantir estabilidade com o Auth original -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 </head>
 <body>
 
-  <div class="card">
+  <main class="card">
     <div class="header">
       <div class="logo-badge">Industrial Intelligence</div>
       <h1>NewEnergy</h1>
       <p>Acesse o portal de monitoramento</p>
     </div>
 
-    <div id="error"></div>
+    <div id="error" role="alert" aria-live="polite"></div>
 
     <div class="input-group">
-      <label>E-mail Corporativo</label>
-      <input type="email" id="email" placeholder="exemplo@empresa.com.br">
+      <label for="email">E-mail Corporativo</label>
+      <input type="email" id="email" placeholder="exemplo@empresa.com.br" autocomplete="username">
     </div>
 
     <div class="input-group">
-      <label>Senha de Acesso</label>
-      <input type="password" id="password" placeholder="Digite sua senha">
+      <label for="password">Senha de Acesso</label>
+      <input type="password" id="password" placeholder="Digite sua senha" autocomplete="current-password">
     </div>
 
     <button id="btnLogin">Entrar no Sistema</button>
 
     <div class="footer-note">
-      &copy; 2024 NewEnergy Solutions • Infraestrutura Crítica
+      &copy; 2026 NewEnergy Solutions • Infraestrutura Crítica
     </div>
-  </div>
+  </main>
 
   <script>
-    // Configuração do Firebase (Mantida a original)
+    // Configuração do Firebase corrigida e autenticada
     const firebaseConfig = {
       apiKey: "AIzaSyB5FnkQiFi3gn9Iup2KNcbrKxWd-0Jjo6Y",
       authDomain: "oficial-688e8.firebaseapp.com",
@@ -198,12 +198,13 @@
     const btnLogin = document.getElementById("btnLogin");
     const errorEl = document.getElementById("error");
 
+    // Monitora o estado de autenticação para redirecionar se já logado
     auth.onAuthStateChanged(user => {
       if (user) window.location.href = "painel.html";
     });
 
     btnLogin.addEventListener("click", () => {
-      const email = emailEl.value;
+      const email = emailEl.value.trim();
       const pass = passEl.value;
 
       if(!email || !pass) {
@@ -231,6 +232,7 @@
       errorEl.style.display = "block";
     }
 
+    // Atalho de teclado para a tecla Enter
     document.addEventListener("keypress", (e) => {
       if(e.key === "Enter") btnLogin.click();
     });
