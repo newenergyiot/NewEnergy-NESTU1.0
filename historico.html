@@ -104,9 +104,9 @@ firebase.initializeApp({
 });
 
 const db = firebase.database();
-let myChart = null, globalData = [], limites = { tMin: 0, tMax: 40, hMin: 0, hMax: 100 };
+let myChart = null, globalData = [], limites = { tMin: 0, tMax: 40, hMin: 0, hMax: 100, cliente: "Não Definido", local: "Não Definido" };
 
-db.ref("/config_alertas").on("value", s => { if(s.val()) limites = s.val(); });
+db.ref("/config_alertas").on("value", s => { if(s.val()) limites = { ...limites, ...s.val() }; });
 
 async function fetchData(periodo) {
     const listaDiv = document.getElementById("lista");
@@ -117,7 +117,7 @@ async function fetchData(periodo) {
     try {
         const snapshot = await db.ref("/historico/diario").once("value");
         const base = snapshot.val();
-        if (!base) { listaDiv.innerHTML = "<p style='text-align:center;'>Sem registros.</p>"; return; }
+        if (!base) { listaDiv.innerHTML = "<p style='text-align:center;'>Sem registros cadastrados.</p>"; return; }
 
         const agora = new Date();
         const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
@@ -125,32 +125,43 @@ async function fetchData(periodo) {
 
         Object.keys(base).forEach(d => {
             const regs = base[d];
-            Object.keys(regs).forEach(ts => {
-                const tsM = parseInt(ts) * 1000;
-                const dObj = new Date(tsM);
-                let ok = false;
-                if (periodo === 'diario' && tsM >= inicioHoje) ok = true;
-                else if (periodo === 'semanal' && tsM >= seteDiasAtras) ok = true;
-                else if (periodo === 'mensal' && dObj.getMonth() === agora.getMonth() && dObj.getFullYear() === agora.getFullYear()) ok = true;
-                else if (periodo === 'anual' && dObj.getFullYear() === agora.getFullYear()) ok = true;
+            if (regs && typeof regs === 'object') {
+                Object.keys(regs).forEach(ts => {
+                    const tsM = parseInt(ts) * 1000;
+                    const dObj = new Date(tsM);
+                    let ok = false;
+                    if (periodo === 'diario' && tsM >= inicioHoje) ok = true;
+                    else if (periodo === 'semanal' && tsM >= seteDiasAtras) ok = true;
+                    else if (periodo === 'mensal' && dObj.getMonth() === agora.getMonth() && dObj.getFullYear() === agora.getFullYear()) ok = true;
+                    else if (periodo === 'anual' && dObj.getFullYear() === agora.getFullYear()) ok = true;
 
-                if (ok) {
-                    globalData.push({
-                        ts: parseInt(ts),
-                        temp: parseFloat(regs[ts].temp),
-                        hum: parseFloat(regs[ts].hum),
-                        data: dObj.toLocaleDateString('pt-BR'),
-                        hora: dObj.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})
-                    });
-                }
-            });
+                    if (ok && regs[ts]) {
+                        globalData.push({
+                            ts: parseInt(ts),
+                            temp: parseFloat(regs[ts].temp),
+                            hum: parseFloat(regs[ts].hum),
+                            data: dObj.toLocaleDateString('pt-BR'),
+                            hora: dObj.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})
+                        });
+                    }
+                });
+            }
         });
 
         globalData = globalData.filter((v, i, a) => a.findIndex(t => t.ts === v.ts) === i);
         globalData.sort((a, b) => b.ts - a.ts);
+        
+        if(globalData.length === 0) {
+            listaDiv.innerHTML = "<p style='text-align:center; padding: 20px;'>Sem dados para o período selecionado.</p>";
+            return;
+        }
+        
         renderUI();
         renderChart(periodo);
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error("Erro ao processar dados de histórico:", e); 
+        listaDiv.innerHTML = "<p style='text-align:center; color: var(--danger);'>Erro ao carregar dados.</p>";
+    }
 }
 
 function renderUI() {
@@ -188,7 +199,13 @@ function renderChart(periodo) {
     myChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: chartData.map(d => (periodo === 'diario' || periodo === 'semanal') ? `${d.data.split('/')[0]}/${d.data.split('/')[1]} ${d.hora}` : d.data),
+            labels: chartData.map(d => {
+                if (periodo === 'diario' || periodo === 'semanal') {
+                    const partes = d.data.split('/');
+                    return partes.length >= 2 ? `${partes[0]}/${partes[1]} ${d.hora}` : `${d.data} ${d.hora}`;
+                }
+                return d.data;
+            }),
             datasets: [
                 { label: 'Temperatura (°C)', data: chartData.map(d => d.temp), borderColor: '#f43f5e', backgroundColor: gradT, fill: true, tension: 0.4, pointRadius: chartData.length > 50 ? 0 : 2, borderWidth: 2 },
                 { label: 'Umidade (%)', data: chartData.map(d => d.hum), borderColor: '#007aff', backgroundColor: gradH, fill: true, tension: 0.4, pointRadius: chartData.length > 50 ? 0 : 2, borderWidth: 2 }
@@ -215,12 +232,11 @@ async function exportarPDF() {
     btn.disabled = true;
     const originalText = btn.innerText;
 
-    // --- CORREÇÃO: PRÉ-CÁLCULO DINÂMICO DE PÁGINAS ---
     const calcularTotalPaginas = () => {
         let tempY = 105; 
         let totalPg = 1;
         for (let i = 0; i < globalData.length; i++) {
-            if (tempY > 280) { totalPg++; tempY = 52 + 10; }
+            if (tempY > 275) { totalPg++; tempY = 52 + 10; }
             tempY += 8;
         }
         return totalPg;
@@ -230,16 +246,16 @@ async function exportarPDF() {
     const header = (p) => {
         doc.setFillColor(26, 54, 93); doc.rect(0, 0, 210, 38, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.text("NEWENERGY", 15, 16);
-        doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(200, 210, 220); 
-        doc.text("SISTEMA DE MONITORAMENTO", 15, 23);
-        doc.setFontSize(8); doc.setTextColor(170, 185, 200);
-        doc.text(`LIMITES: T: ${limites.tMin}°C a ${limites.tMax}°C  |  H: ${limites.hMin}% a ${limites.hMax}%`, 15, 29);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.text("NEWENERGY", 15, 14);
+        doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(200, 210, 220); 
+        doc.text(`SISTEMA DE MONITORAMENTO  |  CLIENTE: ${limites.cliente || "Não Definido"}`, 15, 21);
+        doc.text(`LOCAL DA INSTALAÇÃO: ${limites.local || "Não Definido"}`, 15, 26);
+        doc.text(`LIMITES ADMISSÍVEIS: Temp: ${limites.tMin}°C a ${limites.tMax}°C  |  Hum: ${limites.hMin}% a ${limites.hMax}%`, 15, 31);
 
         doc.setTextColor(255, 255, 255); doc.setFontSize(8);
-        doc.text(`RELATÓRIO: ${aba.toUpperCase()}`, 195, 15, {align: "right"});
-        doc.text(`DATA: ${new Date().toLocaleDateString('pt-BR')}`, 195, 21, {align: "right"});
-        doc.text(`PÁGINA: ${p} / ${totalPaginasReal}`, 195, 27, {align: "right"});
+        doc.text(`RELATÓRIO: ${aba.toUpperCase()}`, 195, 14, {align: "right"});
+        doc.text(`GERADO EM: ${new Date().toLocaleDateString('pt-BR')}`, 195, 20, {align: "right"});
+        doc.text(`PÁGINA: ${p} / ${totalPaginasReal}`, 195, 26, {align: "right"});
         doc.setFillColor(0, 122, 255); doc.rect(0, 38, 210, 1.2, 'F');
     };
 
@@ -254,15 +270,23 @@ async function exportarPDF() {
     header(1);
     try {
         const img = document.getElementById('mainChart').toDataURL("image/png", 1.0);
-        doc.addImage(img, 'PNG', 15, 48, 180, 45);
-    } catch(e) {}
+        doc.addImage(img, 'PNG', 15, 45, 180, 45);
+    } catch(e) { console.warn("Gráfico não inserido no PDF."); }
 
     let y = 105, pg = 1;
     y = drawTableHead(y);
 
     for (let i = 0; i < globalData.length; i++) {
         const d = globalData[i];
-        if (y > 280) { doc.addPage(); pg++; header(pg); y = 52; y = drawTableHead(y); }
+        if (y > 275) { 
+            doc.setFontSize(7); doc.setTextColor(148, 163, 184);
+            doc.text("NewEnergy Analytics - Monitoramento de Precisão", 105, 290, {align: "center"});
+            doc.addPage(); 
+            pg++; 
+            header(pg); 
+            y = 52; 
+            y = drawTableHead(y); 
+        }
         const erroGeral = d.temp > limites.tMax || d.temp < limites.tMin || d.hum > limites.hMax || d.hum < limites.hMin;
 
         if (erroGeral) {
@@ -287,7 +311,7 @@ async function exportarPDF() {
     }
 
     doc.setFontSize(7); doc.setTextColor(148, 163, 184);
-    doc.text("NewEnergy Analytics - Monitoramento de Precisão", 105, 292, {align: "center"});
+    doc.text("NewEnergy Analytics - Monitoramento de Precisão", 105, 290, {align: "center"});
     doc.save(`Relatorio_NewEnergy_${aba.replace(/ /g, "_")}.pdf`);
     btn.disabled = false; btn.innerText = originalText;
 }
