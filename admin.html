@@ -104,24 +104,41 @@
 
                 // 3. Ouvintes dinâmicos que escutam as rotas reais apontadas no cadastro
                 
-                // Monitora a Temperatura em tempo real
+                // Monitora a Temperatura em tempo real (Lógica inteligente para ler objetos/pastas ou valor direto)
                 if (sensorConf.rotaTemp) {
                     db.ref(sensorConf.rotaTemp).on('value', (dataSnapshot) => {
                         const tempEl = document.getElementById(`temp-${sensorKey}`);
                         if (tempEl) {
                             const val = dataSnapshot.val();
-                            tempEl.textContent = val !== null ? `${parseFloat(val).toFixed(1)} °C` : '-- °C';
+                            if (val !== null) {
+                                // Se for um objeto que contém 'temp' dentro, lê o objeto. Se não, lê direto.
+                                if (typeof val === 'object' && val.temp !== undefined) {
+                                    tempEl.textContent = `${parseFloat(val.temp).toFixed(1)} °C`;
+                                } else {
+                                    tempEl.textContent = `${parseFloat(val).toFixed(1)} °C`;
+                                }
+                            } else {
+                                tempEl.textContent = '-- °C';
+                            }
                         }
                     });
                 }
 
-                // Monitora a Umidade em tempo real
+                // Monitora a Umidade em tempo real (Com a mesma proteção inteligente)
                 if (sensorConf.rotaHum) {
                     db.ref(sensorConf.rotaHum).on('value', (dataSnapshot) => {
                         const humEl = document.getElementById(`hum-${sensorKey}`);
                         if (humEl) {
                             const val = dataSnapshot.val();
-                            humEl.textContent = val !== null ? `${parseFloat(val).toFixed(1)} %` : '-- %';
+                            if (val !== null) {
+                                if (typeof val === 'object' && val.hum !== undefined) {
+                                    humEl.textContent = `${parseFloat(val.hum).toFixed(1)} %`;
+                                } else {
+                                    humEl.textContent = `${parseFloat(val).toFixed(1)} %`;
+                                }
+                            } else {
+                                humEl.textContent = '-- %';
+                            }
                         }
                     });
                 }
