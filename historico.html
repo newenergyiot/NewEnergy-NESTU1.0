@@ -1,640 +1,603 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Histórico de Leituras - NewEnergy</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Histórico de Leituras - IoT Sensor</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- jsPDF & html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.min.js" integrity="sha512-BNaRQnYJYiPSqoxaitwrpyXY4abZF18fWGxyh5hvIRpMteTO8iM06Tf3dcda=" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <!-- Script Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Script jsPDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.15);
+      --success: #22c55e;
+      --border: #334155;
+    }
 
-    <!-- Firebase App & Database (Compat SDK) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
 
-    <style>
-        :root {
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --accent-blue: #007aff;
-            --accent-red: #f43f5e;
-            --accent-green: #10b981;
-            --border-color: #e2e8f0;
-        }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 20px;
+      min-height: 100vh;
+    }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            margin: 0;
-            padding: 20px;
-        }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
 
-        .header-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
+    .header-info h1 {
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-        .sensor-info h2 {
-            margin: 0 0 5px 0;
-            font-size: 1.25rem;
-            color: var(--text-primary);
-        }
+    .header-info p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
 
-        .sensor-info p {
-            margin: 0;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
 
-        .actions {
-            display: flex;
-            gap: 10px;
-        }
+    .btn {
+      background: var(--card-bg);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
 
-        button {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
+    .btn:hover {
+      background: var(--border);
+    }
 
-        button:hover { opacity: 0.9; }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      border: none;
+    }
 
-        .btn-secundary { background-color: #e2e8f0; color: var(--text-primary); }
-        .btn-primary { background-color: var(--accent-blue); color: white; }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      color: #fff;
+    }
 
-        .tabs {
-            display: flex;
-            background: #e2e8f0;
-            padding: 4px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            gap: 4px;
-        }
+    /* Filters (Tabs) */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      background: var(--card-bg);
+      padding: 6px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+      width: fit-content;
+    }
 
-        .tab {
-            flex: 1;
-            text-align: center;
-            padding: 8px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-            color: var(--text-secondary);
-        }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
 
-        .tab.active {
-            background: var(--card-bg);
-            color: var(--accent-blue);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+    }
 
-        .chart-container {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            height: 300px;
-            position: relative;
-        }
+    /* Chart Container */
+    .chart-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 20px;
+      margin-bottom: 24px;
+      position: relative;
+      height: 350px;
+    }
 
-        .list-container {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 10px 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+    /* Table & Grouping */
+    .history-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 20px;
+    }
 
-        .data-divider {
-            padding: 10px 0 5px 0;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-color);
-            margin-top: 10px;
-        }
+    .date-group {
+      margin-bottom: 24px;
+    }
 
-        .item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f1f5f9;
-        }
+    .date-group-title {
+      font-size: 1rem;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-        .item:last-child { border-bottom: none; }
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
 
-        .item.alerta { background-color: #fff1f2; padding: 12px; border-radius: 8px; margin: 4px 0; }
+    .history-table th {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 10px 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-        .valor-critico { color: var(--accent-red); font-weight: bold; }
-        .normal { color: var(--accent-green); font-weight: bold; }
+    .history-table td {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
 
-        .erro {
-            padding: 20px;
-            background: #fff1f2;
-            color: var(--accent-red);
-            border-radius: 8px;
-            text-align: center;
-        }
-    </style>
+    .history-table tr.alert-row {
+      background-color: var(--danger-bg);
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .badge-ok {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--success);
+    }
+
+    .badge-alert {
+      background: rgba(239, 68, 68, 0.3);
+      color: var(--danger);
+    }
+
+    /* Utility/States */
+    .loading-state, .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+
+    .loading-spinner {
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="erroFirebase"></div>
+  <div class="container">
+    <header>
+      <div class="header-info">
+        <h1 id="sensor-title"><i class="fa-solid fa-microchip"></i> Carregando Sensor...</h1>
+        <p id="sensor-subtitle">Local: -- | Cliente: --</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn" onclick="window.location.href='admin.html'">
+          <i class="fa-solid fa-arrow-left"></i> Voltar
+        </button>
+        <button class="btn btn-primary" id="btn-export-pdf" onclick="exportToPDF()">
+          <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+        </button>
+      </div>
+    </header>
 
-    <div class="header-card">
-        <div class="sensor-info">
-            <h2 id="sensorNome">Carregando sensor...</h2>
-            <p>Local: <span id="sensorLocal">--</span> | Cliente: <span id="sensorCliente">--</span></p>
+    <div class="filter-tabs">
+      <button class="tab-btn active" onclick="setFilter('hoje', this)">Hoje</button>
+      <button class="tab-btn" onclick="setFilter('7dias', this)">7 Dias</button>
+      <button class="tab-btn" onclick="setFilter('mes', this)">Este Mês</button>
+      <button class="tab-btn" onclick="setFilter('ano', this)">Este Ano</button>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="chart-card">
+      <canvas id="historyChart"></canvas>
+    </div>
+
+    <!-- Tabela de Histórico -->
+    <div class="history-card">
+      <div id="data-container">
+        <div class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Buscando histórico no Firebase...</p>
         </div>
-        <div class="actions">
-            <button id="btnVoltar" class="btn-secundary">Voltar</button>
-            <button id="btnPdf" class="btn-primary">Exportar PDF</button>
-        </div>
+      </div>
     </div>
+  </div>
 
-    <div class="tabs" id="tabsGroup">
-        <div class="tab active" data-periodo="diario">Hoje</div>
-        <div class="tab" data-periodo="semanal">7 Dias</div>
-        <div class="tab" data-periodo="mensal">Este Mês</div>
-        <div class="tab" data-periodo="anual">Este Ano</div>
-    </div>
+  <!-- Firebase Script (v9 Modular via CDN) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-    <div class="chart-container">
-        <canvas id="mainChart"></canvas>
-    </div>
-
-    <div class="list-container">
-        <div id="lista-historico">
-            <p style="text-align:center;padding:40px">Aguardando inicialização...</p>
-        </div>
-    </div>
-</div>
-
-<script>
-    const FIREBASE_CONFIG = {
-        apiKey: "AIzaSyAHF7mVM9Yv71cnqG-C1_P7MfEj1hc6_Bs",
-        authDomain: "nestu-02.firebaseapp.com",
-        databaseURL: "https://nestu-02-default-rtdb.firebaseio.com",
-        projectId: "nestu-02",
-        storageBucket: "nestu-02.firebasestorage.app",
-        messagingSenderId: "440418278168",
-        appId: "1:440418278168:web:15c519eb00200a33435c6d"
+    // Insira a sua configuração do Firebase aqui
+    const firebaseConfig = {
+      apiKey: "SEU_API_KEY",
+      authDomain: "SEU_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://SEU_PROJECT_ID-default-rtdb.firebaseio.com",
+      projectId: "SEU_PROJECT_ID",
+      storageBucket: "SEU_PROJECT_ID.appspot.com",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
     };
 
-    const state = {
-        sensorID: new URLSearchParams(window.location.search).get("id"),
-        sensorConfig: null,
-        globalData: [],
-        chartInstance: null,
-        limites: { tMin: undefined, tMax: undefined, hMin: undefined, hMax: undefined }
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Variáveis Globais
+    let sensorId = new URLSearchParams(window.location.search).get('id') || 'sensor_01';
+    let rawReadings = [];
+    let currentFilter = 'hoje';
+    let historyChart = null;
+
+    // Faixas de Alerta (Padrão)
+    let limits = {
+      tempMin: 15.0,
+      tempMax: 25.0,
+      humMin: 30.0,
+      humMax: 70.0
     };
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(FIREBASE_CONFIG);
-    }
-    const db = firebase.database();
-
-    let elements = {};
-
-    document.addEventListener("DOMContentLoaded", () => {
-        elements = {
-            sensorNome: document.getElementById("sensorNome"),
-            sensorLocal: document.getElementById("sensorLocal"),
-            sensorCliente: document.getElementById("sensorCliente"),
-            erroFirebase: document.getElementById("erroFirebase"),
-            listaHistorico: document.getElementById("lista-historico"),
-            btnPdf: document.getElementById("btnPdf"),
-            btnVoltar: document.getElementById("btnVoltar"),
-            tabsGroup: document.getElementById("tabsGroup"),
-            chartCtx: document.getElementById("mainChart") ? document.getElementById("mainChart").getContext("2d") : null
-        };
-
-        setupEventListeners();
-        
-        if (!state.sensorID) {
-            elements.sensorNome.textContent = "Nenhum sensor selecionado";
-            elements.listaHistorico.innerHTML = `
-                <div class="erro">Nenhum ID de sensor foi informado na URL.<br><br>Acesse o histórico através do painel de controle.</div>
-            `;
-            return;
-        }
-
-        carregarSensor();
+    // Inicialização
+    window.addEventListener('DOMContentLoaded', async () => {
+      await loadSensorMetadata();
+      await fetchHistoryData();
+      renderAll();
     });
 
-    function setupEventListeners() {
-        if (elements.btnVoltar) elements.btnVoltar.addEventListener("click", voltarPainel);
-        if (elements.btnPdf) elements.btnPdf.addEventListener("click", exportarPDF);
-
-        if (elements.tabsGroup) {
-            elements.tabsGroup.addEventListener("click", (e) => {
-                const target = e.target;
-                if (!target.classList.contains("tab")) return;
-
-                document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
-                target.classList.add("active");
-
-                const periodo = target.getAttribute("data-periodo");
-                fetchData(periodo);
-            });
+    // 1. Carregar Metadados e Limites de Alerta
+    async function loadSensorMetadata() {
+      try {
+        const dbRef = ref(db);
+        const snapshot = await get(child(dbRef, `central_sensores/${sensorId}`));
+        
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          document.getElementById('sensor-title').innerHTML = `<i class="fa-solid fa-microchip"></i> ${data.nome || sensorId}`;
+          document.getElementById('sensor-subtitle').innerText = `Local: ${data.localizacao || 'N/A'} | Cliente: ${data.cliente || 'N/A'}`;
+          
+          if (data.tempMin !== undefined) limits.tempMin = parseFloat(data.tempMin);
+          if (data.tempMax !== undefined) limits.tempMax = parseFloat(data.tempMax);
+          if (data.humMin !== undefined) limits.humMin = parseFloat(data.humMin);
+          if (data.humMax !== undefined) limits.humMax = parseFloat(data.humMax);
+        } else {
+          document.getElementById('sensor-title').innerHTML = `<i class="fa-solid fa-microchip"></i> ${sensorId}`;
         }
+      } catch (err) {
+        console.error("Erro ao carregar metadados:", err);
+      }
     }
 
-    async function carregarSensor() {
+    // 2. Buscar Dados do Histórico com Fallback de Rotas
+    async function fetchHistoryData() {
+      const dbRef = ref(db);
+      const pathsToTry = [
+        `historico/${sensorId}`,
+        `historico_diario/${sensorId}`,
+        `leituras/${sensorId}`,
+        `sensores/${sensorId}/historico`
+      ];
+
+      rawReadings = [];
+
+      for (const path of pathsToTry) {
         try {
-            state.limites = { tMin: undefined, tMax: undefined, hMin: undefined, hMax: undefined };
-
-            const sensorIDNorm = state.sensorID ? state.sensorID.trim() : "";
-            
-            const sensorSnap = await db.ref(`central_sensores/${sensorIDNorm}`).once("value");
-            
-            if (sensorSnap.exists()) {
-                state.sensorConfig = sensorSnap.val();
-                elements.sensorNome.textContent = sensorIDNorm;
-                elements.sensorLocal.textContent = state.sensorConfig.nome || state.sensorConfig.local || "--";
-                elements.sensorCliente.textContent = state.sensorConfig.clientID || state.sensorConfig.cliente || "--";
-
-                const s = state.sensorConfig;
-                const parseNum = (val) => (val !== undefined && val !== null && val !== "") ? Number(val) : undefined;
-
-                state.limites.tMin = parseNum(s.tempMin ?? s.tMin);
-                state.limites.tMax = parseNum(s.tempMax ?? s.tMax);
-                state.limites.hMin = parseNum(s.humMin ?? s.hMin ?? s.umidMin);
-                state.limites.hMax = parseNum(s.humMax ?? s.hMax ?? s.umidMax);
-            } else {
-                elements.sensorNome.textContent = sensorIDNorm;
-            }
-
-            const configAlertasSnap = await db.ref("config_alertas").once("value");
-            if (configAlertasSnap.exists()) {
-                const cfgGlobal = configAlertasSnap.val();
-                if (state.limites.tMin === undefined && cfgGlobal.tMin !== undefined) state.limites.tMin = Number(cfgGlobal.tMin);
-                if (state.limites.tMax === undefined && cfgGlobal.tMax !== undefined) state.limites.tMax = Number(cfgGlobal.tMax);
-                if (state.limites.hMin === undefined && cfgGlobal.hMin !== undefined) state.limites.hMin = Number(cfgGlobal.hMin);
-                if (state.limites.hMax === undefined && cfgGlobal.hMax !== undefined) state.limites.hMax = Number(cfgGlobal.hMax);
-            }
-
-            fetchData("diario");
-        } catch (error) {
-            console.error("Erro ao carregar dados do sensor:", error);
-            fetchData("diario");
+          const snapshot = await get(child(dbRef, path));
+          if (snapshot.exists()) {
+            const val = snapshot.val();
+            parseFirebaseData(val);
+            if (rawReadings.length > 0) break; // Sai se encontrou dados
+          }
+        } catch (e) {
+          console.warn(`Falha na rota ${path}:`, e);
         }
+      }
+
+      // Ordenar por data (mais recente primeiro)
+      rawReadings.sort((a, b) => b.timestamp - a.timestamp);
     }
 
-    async function fetchData(periodo) {
-        elements.listaHistorico.innerHTML = '<p style="text-align:center;padding:40px">Sincronizando leituras...</p>';
-        state.globalData = [];
+    // Converter nós arbitrários em array padronizado
+    function parseFirebaseData(data) {
+      if (typeof data !== 'object' || !data) return;
 
-        if (state.chartInstance) {
-            state.chartInstance.destroy();
-            state.chartInstance = null;
-        }
+      Object.keys(data).forEach(key => {
+        const item = data[key];
 
-        try {
-            const agora = new Date();
-            const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
-            const seteDiasAtras = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        if (item && typeof item === 'object') {
+          // Se for uma folha com dados de leitura
+          if (item.temperatura !== undefined || item.temp !== undefined) {
+            let ts = item.timestamp || item.dataHora || item.data;
+            let dateObj = ts ? new Date(ts) : new Date();
 
-            // Tenta buscar na rota direta ou rotas alternativas do banco
-            const idLimpo = state.sensorID.toLowerCase().replace(/[^a-z0-9]/g, "");
-            const numSensor = idLimpo.replace("sensor", "");
-
-            let historicoSnap = await db.ref(`historico/${state.sensorID}`).once("value");
-            
-            if (!historicoSnap.exists()) {
-                historicoSnap = await db.ref(`historico/sensor${numSensor}`).once("value");
-            }
-            if (!historicoSnap.exists()) {
-                historicoSnap = await db.ref("historico/diario").once("value");
-            }
-            if (!historicoSnap.exists()) {
-                historicoSnap = await db.ref("historico").once("value");
+            if (isNaN(dateObj.getTime()) && typeof key === 'string') {
+              // Tenta parsear a chave se for timestamp
+              dateObj = new Date(isNaN(key) ? key : parseInt(key));
             }
 
-            if (!historicoSnap.exists()) return mostrarSemDados();
-
-            const base = historicoSnap.val();
-
-            function varrerEProcessar(obj) {
-                if (!obj || typeof obj !== "object") return;
-
-                if (obj.temp !== undefined || obj.hum !== undefined || obj.temperatura !== undefined) {
-                    processarRegistro(obj.timestamp || obj.ts || Date.now(), obj, periodo, agora, inicioHoje, seteDiasAtras);
-                    return;
-                }
-
-                Object.keys(obj).forEach(chave => {
-                    const subItem = obj[chave];
-                    if (subItem && typeof subItem === "object") {
-                        if (subItem.temp !== undefined || subItem.hum !== undefined || subItem.temperatura !== undefined) {
-                            processarRegistro(chave, subItem, periodo, agora, inicioHoje, seteDiasAtras);
-                        } else {
-                            varrerEProcessar(subItem);
-                        }
-                    }
-                });
-            }
-
-            varrerEProcessar(base);
-
-            const mapaUnico = new Map();
-            state.globalData.forEach(item => mapaUnico.set(`${item.ts}_${item.temp}_${item.hum}`, item));
-            state.globalData = [...mapaUnico.values()].sort((a, b) => b.ts - a.ts);
-
-            if (!state.globalData.length) return mostrarSemDados();
-
-            renderUI();
-            renderChart(periodo);
-        } catch (error) {
-            console.error(error);
-            elements.listaHistorico.innerHTML = `
-                <div class="erro"><b>Erro ao carregar histórico de leituras.</b><br><br>${escapeHtml(error.message)}</div>
-            `;
-        }
-    }
-
-    function processarRegistro(keyOrTs, r, periodo, agora, inicioHoje, seteDiasAtras) {
-        if (!r || typeof r !== "object") return;
-
-        const idRegistro = String(r.sensor || r.sensorID || r.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-        const idAlvo = String(state.sensorID || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
-        if (idRegistro && idAlvo && idRegistro !== idAlvo) return;
-
-        const temp = Number(r.temp !== undefined ? r.temp : r.temperatura);
-        const hum = Number(r.hum !== undefined ? r.hum : r.umidade);
-
-        let timestamp = Number(r.timestamp || r.ts || keyOrTs);
-
-        if (!Number.isFinite(temp) || !Number.isFinite(hum) || !Number.isFinite(timestamp)) return;
-
-        if (timestamp < 1e11) timestamp = timestamp * 1000;
-
-        const dataObj = new Date(timestamp);
-        if (isNaN(dataObj.getTime())) return;
-
-        const ms = timestamp;
-        const ehDiario = periodo === "diario" && ms >= inicioHoje;
-        const ehSemanal = periodo === "semanal" && ms >= seteDiasAtras;
-        const ehMensal = periodo === "mensal" && dataObj.getMonth() === agora.getMonth() && dataObj.getFullYear() === agora.getFullYear();
-        const ehAnual = periodo === "anual" && dataObj.getFullYear() === agora.getFullYear();
-
-        if (ehDiario || ehSemanal || ehMensal || ehAnual) {
-            state.globalData.push({
-                ts: timestamp,
-                temp,
-                hum,
-                data: dataObj.toLocaleDateString("pt-BR"),
-                hora: dataObj.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+            rawReadings.push({
+              timestamp: isNaN(dateObj.getTime()) ? Date.now() : dateObj.getTime(),
+              dataObj: isNaN(dateObj.getTime()) ? new Date() : dateObj,
+              temperatura: parseFloat(item.temperatura ?? item.temp ?? 0),
+              umidade: parseFloat(item.umidade ?? item.hum ?? 0)
             });
+          } else {
+            // Se for sub-nó (ex: agrupado por data), recursão
+            parseFirebaseData(item);
+          }
         }
+      });
     }
 
-    function checarErro(temp, hum) {
-        const erroTemp = (state.limites.tMax !== undefined && temp > state.limites.tMax) || 
-                         (state.limites.tMin !== undefined && temp < state.limites.tMin);
-        const erroHum = (state.limites.hMax !== undefined && hum > state.limites.hMax) || 
-                        (state.limites.hMin !== undefined && hum < state.limites.hMin);
-        return { erroTemp, erroHum, temErro: erroTemp || erroHum };
+    // 3. Filtrar Dados pelo Período
+    function getFilteredData() {
+      const now = new Date();
+      return rawReadings.filter(item => {
+        const d = item.dataObj;
+        if (currentFilter === 'hoje') {
+          return d.toDateString() === now.toDateString();
+        } else if (currentFilter === '7dias') {
+          const diffDays = (now - d) / (1000 * 60 * 60 * 24);
+          return diffDays <= 7;
+        } else if (currentFilter === 'mes') {
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        } else if (currentFilter === 'ano') {
+          return d.getFullYear() === now.getFullYear();
+        }
+        return true;
+      });
     }
 
-    function renderUI() {
-        elements.listaHistorico.innerHTML = "";
-        let ultimaData = "";
-
-        state.globalData.forEach(d => {
-            if (d.data !== ultimaData) {
-                const divider = document.createElement("div");
-                divider.className = "data-divider";
-                divider.innerHTML = `<span>${d.data}</span>`;
-                elements.listaHistorico.appendChild(divider);
-                ultimaData = d.data;
-            }
-
-            const { erroTemp, erroHum, temErro } = checarErro(d.temp, d.hum);
-
-            const itemDiv = document.createElement("div");
-            itemDiv.className = `item ${temErro ? "alerta" : ""}`;
-            itemDiv.innerHTML = `
-                <div><b>${d.hora}</b></div>
-                <div style="display:flex; gap:20px; text-align:right">
-                    <div>
-                        <small>TEMP</small><br>
-                        <span class="${erroTemp ? "valor-critico" : ""}">${d.temp.toFixed(1)}°C</span>
-                    </div>
-                    <div>
-                        <small>UMID</small><br>
-                        <span class="${erroHum ? "valor-critico" : ""}">${d.hum.toFixed(1)}%</span>
-                    </div>
-                    <div>
-                        <small>STATUS</small><br>
-                        <span class="${temErro ? "valor-critico" : "normal"}">${temErro ? "ALERTA" : "NORMAL"}</span>
-                    </div>
-                </div>
-            `;
-            elements.listaHistorico.appendChild(itemDiv);
-        });
+    // 4. Renderizar Tela (Gráfico + Tabela)
+    function renderAll() {
+      const data = getFilteredData();
+      renderChart(data);
+      renderTable(data);
     }
 
-    function renderChart(periodo) {
-        if (!elements.chartCtx) return;
+    window.setFilter = function(filterName, btnElement) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      btnElement.classList.add('active');
+      currentFilter = filterName;
+      renderAll();
+    };
 
-        const dadosOrdenados = [...state.globalData].sort((a, b) => a.ts - b.ts);
+    // 5. Renderizar Gráfico
+    function renderChart(data) {
+      const ctx = document.getElementById('historyChart').getContext('2d');
+      const sortedAsc = [...data].sort((a, b) => a.timestamp - b.timestamp);
 
-        const gradTemp = elements.chartCtx.createLinearGradient(0, 0, 0, 300);
-        gradTemp.addColorStop(0, "rgba(244, 63, 94, 0.2)");
-        gradTemp.addColorStop(1, "rgba(244, 63, 94, 0)");
+      const labels = sortedAsc.map(i => {
+        return i.dataObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + 
+               ' ' + i.dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      });
 
-        const gradHum = elements.chartCtx.createLinearGradient(0, 0, 0, 300);
-        gradHum.addColorStop(0, "rgba(0, 122, 255, 0.2)");
-        gradHum.addColorStop(1, "rgba(0, 122, 255, 0)");
+      const temps = sortedAsc.map(i => i.temperatura);
+      const hums = sortedAsc.map(i => i.umidade);
 
-        state.chartInstance = new Chart(elements.chartCtx, {
-            type: "line",
-            data: {
-                labels: dadosOrdenados.map(d => 
-                    (periodo === "diario" || periodo === "semanal") 
-                        ? `${d.data.split("/")[0]}/${d.data.split("/")[1]} ${d.hora}` 
-                        : d.data
-                ),
-                datasets: [
-                    {
-                        label: "Temperatura (°C)",
-                        data: dadosOrdenados.map(d => d.temp),
-                        borderColor: "#f43f5e",
-                        backgroundColor: gradTemp,
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: dadosOrdenados.length > 40 ? 0 : 3,
-                        borderWidth: 2
-                    },
-                    {
-                        label: "Umidade (%)",
-                        data: dadosOrdenados.map(d => d.hum),
-                        borderColor: "#007aff",
-                        backgroundColor: gradHum,
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: dadosOrdenados.length > 40 ? 0 : 3,
-                        borderWidth: 2
-                    }
-                ]
+      if (historyChart) {
+        historyChart.destroy();
+      }
+
+      historyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Temperatura (°C)',
+              data: temps,
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: labels.length > 50 ? 0 : 3
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: "index", intersect: false },
-                plugins: {
-                    legend: { position: "top" }
-                },
-                scales: {
-                    x: { ticks: { autoSkip: true, maxTicksLimit: 8 } },
-                    y: { grid: { color: "#f1f5f9" } }
-                }
+            {
+              label: 'Umidade (%)',
+              data: hums,
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56, 189, 248, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: labels.length > 50 ? 0 : 3
             }
-        });
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#f8fafc' } }
+          },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+            y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+          }
+        }
+      });
     }
 
-    async function exportarPDF() {
-        if (!state.globalData.length) return alert("Não existem leituras para exportar.");
+    // 6. Renderizar Tabela Agrupada por Data
+    function renderTable(data) {
+      const container = document.getElementById('data-container');
 
-        const jsPDF = window.jspdf ? window.jspdf.jsPDF : (window.jsPDF || null);
-        if (!jsPDF) return alert("Biblioteca de PDF não foi carregada corretamente.");
+      if (data.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fa-solid fa-folder-open" style="font-size: 2rem; margin-bottom: 8px;"></i>
+            <p>Nenhuma leitura encontrada para o período selecionado.</p>
+          </div>`;
+        return;
+      }
 
-        const doc = new jsPDF();
-        const activeTab = document.querySelector(".tab.active").innerText;
-        const originalText = elements.btnPdf.innerText;
+      // Agrupar por data (DD/MM/YYYY)
+      const groups = {};
+      data.forEach(item => {
+        const dateKey = item.dataObj.toLocaleDateString('pt-BR');
+        if (!groups[dateKey]) groups[dateKey] = [];
+        groups[dateKey].push(item);
+      });
 
-        elements.btnPdf.disabled = true;
+      let html = '';
+      Object.keys(groups).forEach(dateStr => {
+        html += `
+          <div class="date-group">
+            <div class="date-group-title">
+              <i class="fa-regular fa-calendar-days"></i> ${dateStr}
+            </div>
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Hora</th>
+                  <th>Temperatura</th>
+                  <th>Umidade</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>`;
 
-        const linhasPorPagina = 28;
-        const totalPaginas = Math.max(1, Math.ceil(state.globalData.length / linhasPorPagina));
+        groups[dateStr].forEach(row => {
+          const timeStr = row.dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          
+          const isTempAlert = row.temperatura < limits.tempMin || row.temperatura > limits.tempMax;
+          const isHumAlert = row.umidade < limits.humMin || row.umidade > limits.humMax;
+          const isAlert = isTempAlert || isHumAlert;
 
-        const desenharHeader = (pagina) => {
-            doc.setFillColor(26, 54, 93);
-            doc.rect(0, 0, 210, 38, "F");
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(20);
-            doc.text("NEWENERGY", 15, 16);
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "normal");
-            doc.text("RELATÓRIO DE MONITORAMENTO", 15, 23);
-            doc.setFontSize(8);
-            doc.text(`SENSOR: ${state.sensorID}`, 15, 29);
-            doc.text(`FILTRO: ${activeTab.toUpperCase()}`, 195, 15, { align: "right" });
-            doc.text(`EMISSÃO: ${new Date().toLocaleDateString("pt-BR")}`, 195, 21, { align: "right" });
-            doc.text(`PÁGINA: ${pagina} / ${totalPaginas}`, 195, 27, { align: "right" });
-            doc.setFillColor(0, 122, 255);
-            doc.rect(0, 38, 210, 1.2, "F");
-        };
+          html += `
+            <tr class="${isAlert ? 'alert-row' : ''}">
+              <td>${timeStr}</td>
+              <td style="${isTempAlert ? 'color: var(--danger); font-weight: bold;' : ''}">
+                ${row.temperatura.toFixed(1)} °C
+              </td>
+              <td style="${isHumAlert ? 'color: var(--danger); font-weight: bold;' : ''}">
+                ${row.umidade.toFixed(1)} %
+              </td>
+              <td>
+                ${isAlert 
+                  ? '<span class="badge badge-alert"><i class="fa-solid fa-triangle-exclamation"></i> ALERTA</span>' 
+                  : '<span class="badge badge-ok"><i class="fa-solid fa-check"></i> Normal</span>'}
+              </td>
+            </tr>`;
+        });
 
-        const desenharTabelaHeader = (yPos) => {
-            doc.setFillColor(245, 248, 251);
-            doc.rect(15, yPos - 6, 180, 10, "F");
-            doc.setDrawColor(200, 210, 220);
-            doc.line(15, yPos + 4, 195, yPos + 4);
-            doc.setTextColor(26, 54, 93);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(9);
-            doc.text("DATA / HORA", 20, yPos);
-            doc.text("TEMPERATURA", 78, yPos);
-            doc.text("UMIDADE", 128, yPos);
-            doc.text("STATUS", 172, yPos);
-            return yPos + 10;
-        };
+        html += `
+              </tbody>
+            </table>
+          </div>`;
+      });
 
-        let paginaAtual = 1;
-        desenharHeader(paginaAtual);
-        let y = desenharTabelaHeader(55);
+      container.innerHTML = html;
+    }
 
-        for (let i = 0; i < state.globalData.length; i++) {
-            const item = state.globalData[i];
+    // 7. Exportar em PDF usando jsPDF + html2canvas
+    window.exportToPDF = async function() {
+      const btn = document.getElementById('btn-export-pdf');
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Gerando PDF...`;
 
-            if (y > 280) {
-                doc.addPage();
-                paginaAtual++;
-                desenharHeader(paginaAtual);
-                y = desenharTabelaHeader(55);
-            }
+      try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const element = document.querySelector('.container');
 
-            const { temErro } = checarErro(item.temp, item.hum);
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          backgroundColor: '#0f172a'
+        });
 
-            if (temErro) {
-                doc.setFillColor(255, 241, 242);
-                doc.rect(15, y - 5, 180, 8, "F");
-                doc.setTextColor(225, 29, 72);
-                doc.setFont("helvetica", "bold");
-            } else {
-                doc.setTextColor(51, 65, 85);
-                doc.setFont("helvetica", "normal");
-            }
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 210; 
+        const pageHeight = 297; 
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
 
-            doc.setFontSize(8);
-            doc.text(`${item.data} ${item.hora}`, 20, y);
-            doc.text(`${item.temp.toFixed(1)}°C`, 83, y);
-            doc.text(`${item.hum.toFixed(1)}%`, 133, y);
-            doc.setTextColor(...(temErro ? [225, 29, 72] : [16, 185, 129]));
-            doc.text(temErro ? "ALERTA" : "NORMAL", 172, y);
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
 
-            y += 8;
-
-            if (i % 20 === 0) {
-                elements.btnPdf.innerText = `Gerando... ${Math.round((i / state.globalData.length) * 100)}%`;
-                await new Promise(resolve => setTimeout(resolve, 1));
-            }
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
         }
 
-        doc.setFontSize(7);
-        doc.setTextColor(148, 163, 184);
-        doc.text("NewEnergy - Monitoramento Ambiental", 105, 292, { align: "center" });
-
-        doc.save(`Relatorio_NewEnergy_${state.sensorID}.pdf`);
-
-        elements.btnPdf.disabled = false;
-        elements.btnPdf.innerText = originalText;
-    }
-
-    function mostrarSemDados() {
-        elements.listaHistorico.innerHTML = '<p style="text-align:center;padding:40px">Nenhum registro encontrado para este sensor no período selecionado.</p>';
-    }
-
-    function voltarPainel() {
-        const idParam = state.sensorID ? encodeURIComponent(state.sensorID) : "";
-        window.location.href = `admin.html?id=${idParam}`;
-    }
-
-    function escapeHtml(string) {
-        return String(string).replace(/[&<>"']/g, match => {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return map[match];
-        });
-    }
-</script>
-
+        pdf.save(`historico_${sensorId}_${new Date().toISOString().slice(0,10)}.pdf`);
+      } catch (err) {
+        console.error("Erro ao gerar PDF:", err);
+        alert("Falha ao gerar PDF. Verifique o console.");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-file-pdf"></i> Exportar PDF`;
+      }
+    };
+  </script>
 </body>
 </html>
