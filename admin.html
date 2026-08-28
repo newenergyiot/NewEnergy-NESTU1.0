@@ -2,1374 +2,416 @@
 <html lang="pt-BR">
 
 <head>
-
-<meta charset="UTF-8">
-
-<meta
-    name="viewport"
-    content="width=device-width,initial-scale=1"
->
-
-<title>Central NewEnergy</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Central NewEnergy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
-
 
 <body class="bg-slate-50 font-sans min-h-screen">
 
-
-<!-- =====================================================
-     CABEÇALHO
-===================================================== -->
-
-<header class="bg-white border-b p-5 shadow-sm">
-
-<div class="max-w-7xl mx-auto flex justify-between items-center">
-
-<div>
-
-<h1 class="text-2xl font-bold text-slate-800">
-CENTRAL NEWENERGY
-</h1>
-
-<p class="text-sm text-blue-600">
-Monitoramento Geral
-</p>
-
-</div>
-
-
-<div class="flex items-center gap-4">
-
-<span
-id="status"
-class="text-sm text-slate-500"
->
-● Conectando...
-</span>
-
-
-<button
-onclick="abrirModal()"
-class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl"
->
-+ Novo Sensor
-</button>
-
-</div>
-
-</div>
-
-</header>
-
-
-
-<!-- =====================================================
-     SENSORES
-===================================================== -->
-
-<main class="max-w-7xl mx-auto p-6">
-
-<div
-id="sensores"
-class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
->
-</div>
-
-</main>
-
-
-
-<!-- =====================================================
-     MODAL
-===================================================== -->
-
-<div
-id="modal"
-class="hidden fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50"
->
-
-<div class="bg-white rounded-2xl p-6 w-full max-w-md">
-
-
-<div class="flex justify-between mb-5">
-
-<h2
-id="titulo"
-class="text-lg font-bold"
->
-Novo Sensor
-</h2>
-
-
-<button
-onclick="fecharModal()"
-class="text-slate-500"
->
-Cancelar
-</button>
-
-</div>
-
-
-
-<form
-onsubmit="salvar(event)"
-class="space-y-3"
->
-
-
-<input
-id="id"
-required
-placeholder="SENSOR_03"
-class="campo"
->
-
-
-<input
-id="nome"
-required
-placeholder="Local / Equipamento"
-class="campo"
->
-
-
-<input
-id="cliente"
-required
-placeholder="Nome do Cliente"
-class="campo"
->
-
-
-<!-- =================================================
-     ROTAS
-================================================= -->
-
-<div>
-
-<label class="text-xs font-bold text-slate-500">
-Rota da temperatura
-</label>
-
-<input
-id="rotaTemp"
-required
-placeholder="/temp2"
-class="campo"
->
-
-</div>
-
-
-<div>
-
-<label class="text-xs font-bold text-slate-500">
-Rota da umidade
-</label>
-
-<input
-id="rotaHum"
-required
-placeholder="/hum2"
-class="campo"
->
-
-</div>
-
-
-<div>
-
-<label class="text-xs font-bold text-slate-500">
-Rota do último contato
-</label>
-
-<input
-id="rotaLastSeen"
-required
-placeholder="/last_seen2"
-class="campo"
->
-
-</div>
-
-
-<button
-id="salvarBtn"
-class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl"
->
-Salvar Sensor
-</button>
-
-
-</form>
-
-</div>
-
-</div>
-
-
-
-<!-- =====================================================
-     ESTILO
-===================================================== -->
-
-<style>
-
-.campo{
-
-    width:100%;
-
-    box-sizing:border-box;
-
-    background:#f8fafc;
-
-    border:1px solid #e2e8f0;
-
-    border-radius:10px;
-
-    padding:11px 14px;
-
-    outline:none;
-
-}
-
-
-.campo:focus{
-
-    border-color:#3b82f6;
-
-    box-shadow:
-        0 0 0 2px #bfdbfe;
-
-}
-
-
-label{
-
-    display:block;
-
-    margin-bottom:4px;
-
-}
-
-</style>
-
-
-
-<script>
-
-
-// =====================================================
-// FIREBASE
-// =====================================================
-
-const firebaseConfig = {
-
-    apiKey:
-        "AIzaSyAHF7mVM9Yv71cnqG-C1_P7MfEj1hc6_Bs",
-
-    authDomain:
-        "nestu-02.firebaseapp.com",
-
-    databaseURL:
-        "https://nestu-02-default-rtdb.firebaseio.com",
-
-    projectId:
-        "nestu-02",
-
-    storageBucket:
-        "nestu-02.firebasestorage.app",
-
-    messagingSenderId:
-        "440418278168",
-
-    appId:
-        "1:440418278168:web:15c519eb00200a33435c6d"
-
-};
-
-
-firebase.initializeApp(firebaseConfig);
-
-
-const db =
-    firebase.database();
-
-
-
-// =====================================================
-// VARIÁVEIS
-// =====================================================
-
-let editando = false;
-
-let sensorEditando = null;
-
-
-// Guarda os listeners ativos
-const listeners = {};
-
-
-
-// =====================================================
-// CARREGAR SENSORES
-// =====================================================
-
-db.ref("central_sensores").on(
-    "value",
-    snapshot => {
-
-        const container =
-            document.getElementById("sensores");
-
-
-        container.innerHTML = "";
-
-
-        if (!snapshot.exists()) {
-
-            container.innerHTML = `
-
-                <p
-                class="text-slate-500 col-span-full text-center"
-                >
-                    Nenhum sensor cadastrado.
-                </p>
-
-            `;
-
-
-            document.getElementById(
-                "status"
-            ).textContent =
-                "● Nenhum sensor";
-
-
-            return;
-
-        }
-
-
-        document.getElementById(
-            "status"
-        ).textContent =
-            "● Sistema conectado";
-
-
-        snapshot.forEach(
-            item => {
-
-                criarCard(
-                    item.key,
-                    item.val()
-                );
-
-            }
-        );
-
-    },
-    error => {
-
-        console.error(error);
-
-        document.getElementById(
-            "status"
-        ).textContent =
-            "● Erro de conexão";
-
-    }
-);
-
-
-
-// =====================================================
-// CRIAR CARD
-// =====================================================
-
-function criarCard(
-    id,
-    sensor
-){
-
-    const container =
-        document.getElementById(
-            "sensores"
-        );
-
-
-    const card =
-        document.createElement("div");
-
-
-    card.id =
-        `card-${id}`;
-
-
-    card.className =
-        "bg-white rounded-2xl border border-slate-200 shadow-sm p-5";
-
-
-    card.innerHTML = `
-
-        <div class="flex justify-between">
-
+    <!-- CABEÇALHO -->
+    <header class="bg-white border-b p-5 shadow-sm">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div>
-
-                <p class="text-xs text-slate-400 font-bold">
-                    ${escapeHtml(id)}
-                </p>
-
-
-                <h2 class="text-lg font-bold text-slate-800">
-                    ${escapeHtml(sensor.nome || "Sensor")}
-                </h2>
-
-
-                <p class="text-xs text-slate-500">
-                    Cliente:
-                    ${escapeHtml(sensor.clientID || "-")}
-                </p>
-
+                <h1 class="text-2xl font-bold text-slate-800">CENTRAL NEWENERGY</h1>
+                <p class="text-sm text-blue-600">Monitoramento Geral</p>
             </div>
-
-
-            <div class="flex gap-2">
-
-                <button
-                onclick="editar('${escapeAttr(id)}')"
-                class="bg-slate-100 px-2 py-1 rounded hover:bg-slate-200"
-                >
-                    ✏️
+            <div class="flex items-center gap-4">
+                <span id="status" class="text-sm text-slate-500">● Conectando...</span>
+                <button onclick="abrirModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl">
+                    + Novo Sensor
                 </button>
+            </div>
+        </div>
+    </header>
 
+    <!-- SENSORES -->
+    <main class="max-w-7xl mx-auto p-6">
+        <div id="sensores" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </main>
 
-                <button
-                onclick="excluir('${escapeAttr(id)}')"
-                class="bg-slate-100 px-2 py-1 rounded hover:bg-slate-200"
-                >
-                    🗑️
+    <!-- MODAL -->
+    <div id="modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between mb-5">
+                <h2 id="titulo" class="text-lg font-bold">Novo Sensor</h2>
+                <button onclick="fecharModal()" class="text-slate-500">Cancelar</button>
+            </div>
+
+            <form onsubmit="salvar(event)" class="space-y-3">
+                <input id="id" required placeholder="SENSOR_03" class="campo">
+                <input id="nome" required placeholder="Local / Equipamento" class="campo">
+                <input id="cliente" required placeholder="Nome do Cliente" class="campo">
+
+                <div>
+                    <label class="text-xs font-bold text-slate-500">Rota da temperatura</label>
+                    <input id="rotaTemp" required placeholder="/temp2" class="campo">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-500">Rota da umidade</label>
+                    <input id="rotaHum" required placeholder="/hum2" class="campo">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-500">Rota do último contato</label>
+                    <input id="rotaLastSeen" required placeholder="/last_seen2" class="campo">
+                </div>
+
+                <button id="salvarBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl">
+                    Salvar Sensor
                 </button>
-
-            </div>
-
+            </form>
         </div>
-
-
-
-        <div class="grid grid-cols-2 gap-3 mt-5">
-
-
-            <div class="bg-slate-50 rounded-xl p-4 text-center">
-
-                <p class="text-xs text-slate-500">
-                    Temperatura
-                </p>
-
-
-                <strong
-                id="temp-${escapeAttr(id)}"
-                class="text-2xl text-slate-800"
-                >
-                    -- °C
-                </strong>
-
-            </div>
-
-
-
-            <div class="bg-slate-50 rounded-xl p-4 text-center">
-
-                <p class="text-xs text-slate-500">
-                    Umidade
-                </p>
-
-
-                <strong
-                id="hum-${escapeAttr(id)}"
-                class="text-2xl text-slate-800"
-                >
-                    -- %
-                </strong>
-
-            </div>
-
-        </div>
-
-
-
-        <div
-        class="flex justify-between items-center mt-4 pt-3 border-t"
-        >
-
-            <span
-            id="online-${escapeAttr(id)}"
-            class="text-sm text-slate-500"
-            >
-                ● Offline
-            </span>
-
-
-            <span
-            id="seen-${escapeAttr(id)}"
-            class="text-xs text-slate-500"
-            >
-                --
-            </span>
-
-        </div>
-
-
-
-        <a
-    href="historico.html?id=${encodeURIComponent(id)}"
-    target="_blank"
-    class="block text-center bg-blue-50 text-blue-600 font-bold rounded-xl py-3 mt-4"
->
-    Ver Histórico
-</a>
-
-    `;
-
-
-    container.appendChild(card);
-
-
-
-    // =================================================
-    // TEMPERATURA
-    // =================================================
-
-    if (sensor.rotaTemp) {
-
-        ouvirRota(
-            sensor.rotaTemp,
-            valor => {
-
-                const elemento =
-                    document.getElementById(
-                        `temp-${id}`
-                    );
-
-
-                if (
-                    elemento &&
-                    Number.isFinite(valor)
-                ) {
-
-                    elemento.textContent =
-                        valor.toFixed(1) +
-                        " °C";
-
-                }
-
-            }
-        );
-
-    }
-
-
-
-    // =================================================
-    // UMIDADE
-    // =================================================
-
-    if (sensor.rotaHum) {
-
-        ouvirRota(
-            sensor.rotaHum,
-            valor => {
-
-                const elemento =
-                    document.getElementById(
-                        `hum-${id}`
-                    );
-
-
-                if (
-                    elemento &&
-                    Number.isFinite(valor)
-                ) {
-
-                    elemento.textContent =
-                        valor.toFixed(1) +
-                        " %";
-
-                }
-
-            }
-        );
-
-    }
-
-
-
-    // =================================================
-    // LAST SEEN
-    // =================================================
-
-    if (sensor.rotaLastSeen) {
-
-        ouvirRota(
-            sensor.rotaLastSeen,
-            valor => {
-
-                atualizarOnline(
-                    id,
-                    valor
-                );
-
-            }
-        );
-
-    }
-
-}
-
-
-
-// =====================================================
-// OUVIR ROTA
-// =====================================================
-
-function ouvirRota(
-    rota,
-    callback
-){
-
-    if (!rota)
-        return;
-
-
-    const ref =
-        db.ref(
-            normalizarRota(rota)
-        );
-
-
-    ref.on(
-        "value",
-        snapshot => {
-
-            const valor =
-                Number(
-                    snapshot.val()
-                );
-
-
-            callback(valor);
-
+    </div>
+
+    <!-- ESTILO -->
+    <style>
+        .campo {
+            width: 100%;
+            box-sizing: border-box;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 11px 14px;
+            outline: none;
         }
-    );
 
-
-    listeners[rota] =
-        ref;
-
-}
-
-
-
-// =====================================================
-// NORMALIZAR ROTA
-// =====================================================
-
-function normalizarRota(rota){
-
-    if (!rota)
-        return "";
-
-
-    rota =
-        String(rota).trim();
-
-
-    if (
-        rota.startsWith("/")
-    ) {
-
-        rota =
-            rota.substring(1);
-
-    }
-
-
-    return rota;
-
-}
-
-
-
-// =====================================================
-// ONLINE / OFFLINE
-// =====================================================
-
-function atualizarOnline(
-    id,
-    timestamp
-){
-
-    if (
-        !Number.isFinite(
-            Number(timestamp)
-        )
-    )
-        return;
-
-
-    let ts =
-        Number(timestamp);
-
-
-    // Se estiver em milissegundos
-    if (
-        ts > 100000000000
-    ) {
-
-        ts =
-            Math.floor(
-                ts / 1000
-            );
-
-    }
-
-
-    const segundos =
-        Math.floor(
-            Date.now() / 1000
-        ) -
-        ts;
-
-
-    const online =
-        segundos >= 0 &&
-        segundos < 60;
-
-
-    const elemento =
-        document.getElementById(
-            `online-${id}`
-        );
-
-
-    const hora =
-        document.getElementById(
-            `seen-${id}`
-        );
-
-
-    if (!elemento)
-        return;
-
-
-    if (online) {
-
-        elemento.textContent =
-            "● Online";
-
-        elemento.className =
-            "text-sm text-emerald-600 font-bold";
-
-    }
-    else {
-
-        elemento.textContent =
-            "● Offline";
-
-        elemento.className =
-            "text-sm text-rose-600 font-bold";
-
-    }
-
-
-    if (hora) {
-
-        hora.textContent =
-            new Date(
-                ts * 1000
-            ).toLocaleTimeString(
-                "pt-BR"
-            );
-
-    }
-
-}
-
-
-
-// =====================================================
-// NOVO SENSOR
-// =====================================================
-
-function abrirModal(){
-
-    editando = false;
-
-    sensorEditando = null;
-
-
-    document.getElementById(
-        "titulo"
-    ).textContent =
-        "Novo Sensor";
-
-
-    document.querySelector(
-        "form"
-    ).reset();
-
-
-    document.getElementById(
-        "id"
-    ).disabled = false;
-
-
-    // Para novos sensores,
-    // sugerimos automaticamente as rotas
-    // conforme o número informado.
-
-    document.getElementById(
-        "id"
-    ).oninput =
-        sugerirRotas;
-
-
-    document.getElementById(
-        "modal"
-    ).classList.remove(
-        "hidden"
-    );
-
-}
-
-
-
-// =====================================================
-// SUGERIR ROTAS
-// =====================================================
-
-function sugerirRotas(){
-
-    if (editando)
-        return;
-
-
-    const valor =
-        document.getElementById(
-            "id"
-        )
-        .value
-        .trim()
-        .toUpperCase();
-
-
-    const resultado =
-        valor.match(
-            /^SENSOR_(\d+)$/
-        );
-
-
-    if (!resultado)
-        return;
-
-
-    const numero =
-        Number(
-            resultado[1]
-        );
-
-
-    if (
-        numero === 1
-    ) {
-
-        document.getElementById(
-            "rotaTemp"
-        ).value =
-            "/temp";
-
-
-        document.getElementById(
-            "rotaHum"
-        ).value =
-            "/hum";
-
-
-        document.getElementById(
-            "rotaLastSeen"
-        ).value =
-            "/last_seen";
-
-    }
-    else {
-
-        document.getElementById(
-            "rotaTemp"
-        ).value =
-            `/temp${numero}`;
-
-
-        document.getElementById(
-            "rotaHum"
-        ).value =
-            `/hum${numero}`;
-
-
-        document.getElementById(
-            "rotaLastSeen"
-        ).value =
-            `/last_seen${numero}`;
-
-    }
-
-}
-
-
-
-// =====================================================
-// FECHAR
-// =====================================================
-
-function fecharModal(){
-
-    document.getElementById(
-        "modal"
-    ).classList.add(
-        "hidden"
-    );
-
-}
-
-
-
-// =====================================================
-// EDITAR
-// =====================================================
-
-function editar(id){
-
-    db.ref(
-        `central_sensores/${id}`
-    )
-    .once("value")
-    .then(
-        snapshot => {
+        .campo:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px #bfdbfe;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+        }
+    </style>
+
+    <script>
+        // FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyAHF7mVM9Yv71cnqG-C1_P7MfEj1hc6_Bs",
+            authDomain: "nestu-02.firebaseapp.com",
+            databaseURL: "https://nestu-02-default-rtdb.firebaseio.com",
+            projectId: "nestu-02",
+            storageBucket: "nestu-02.firebasestorage.app",
+            messagingSenderId: "440418278168",
+            appId: "1:440418278168:web:15c519eb00200a33435c6d"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // VARIÁVEIS
+        let editando = false;
+        let sensorEditando = null;
+        let listeners = {};
+
+        // LIMPAR ESCUTADORES ANTIGOS
+        function limparListeners() {
+            Object.keys(listeners).forEach(rota => {
+                if (listeners[rota]) {
+                    listeners[rota].off();
+                }
+            });
+            listeners = {};
+        }
+
+        // CARREGAR SENSORES
+        db.ref("central_sensores").on("value", snapshot => {
+            limparListeners();
+            const container = document.getElementById("sensores");
+            container.innerHTML = "";
 
             if (!snapshot.exists()) {
-
-                alert(
-                    "Sensor não encontrado."
-                );
-
+                container.innerHTML = `<p class="text-slate-500 col-span-full text-center">Nenhum sensor cadastrado.</p>`;
+                document.getElementById("status").textContent = "● Nenhum sensor";
                 return;
-
             }
 
+            document.getElementById("status").textContent = "● Sistema conectado";
 
-            const s =
-                snapshot.val();
-
-
-            editando = true;
-
-            sensorEditando = id;
-
-
-            document.getElementById(
-                "titulo"
-            ).textContent =
-                "Editar " + id;
-
-
-            const campoId =
-                document.getElementById(
-                    "id"
-                );
-
-
-            campoId.value =
-                id;
-
-
-            campoId.disabled =
-                true;
-
-
-            // Desliga sugestão automática
-            campoId.oninput =
-                null;
-
-
-            document.getElementById(
-                "nome"
-            ).value =
-                s.nome || "";
-
-
-            document.getElementById(
-                "cliente"
-            ).value =
-                s.clientID || "";
-
-
-            // =================================================
-            // IMPORTANTE:
-            // PRESERVA AS ROTAS QUE JÁ EXISTEM NO FIREBASE
-            // =================================================
-
-            document.getElementById(
-                "rotaTemp"
-            ).value =
-                s.rotaTemp || "";
-
-
-            document.getElementById(
-                "rotaHum"
-            ).value =
-                s.rotaHum || "";
-
-
-            document.getElementById(
-                "rotaLastSeen"
-            ).value =
-                s.rotaLastSeen || "";
-
-
-            document.getElementById(
-                "modal"
-            ).classList.remove(
-                "hidden"
-            );
-
-        }
-    )
-    .catch(
-        error => {
-
+            snapshot.forEach(item => {
+                criarCard(item.key, item.val());
+            });
+        }, error => {
             console.error(error);
-
-            alert(
-                "Erro ao carregar sensor."
-            );
-
-        }
-    );
-
-}
-
-
-
-// =====================================================
-// SALVAR
-// =====================================================
-
-function salvar(event){
-
-    event.preventDefault();
-
-
-    const id =
-        document.getElementById(
-            "id"
-        )
-        .value
-        .trim()
-        .toUpperCase()
-        .replace(
-            /\s+/g,
-            "_"
-        );
-
-
-    const resultado =
-        id.match(
-            /^SENSOR_(\d+)$/
-        );
-
-
-    if (!resultado) {
-
-        alert(
-            "Use o formato SENSOR_01, SENSOR_02, SENSOR_03..."
-        );
-
-        return;
-
-    }
-
-
-    const numero =
-        Number(
-            resultado[1]
-        );
-
-
-    if (
-        numero < 1 ||
-        numero > 999
-    ) {
-
-        alert(
-            "Número do sensor inválido."
-        );
-
-        return;
-
-    }
-
-
-    const nome =
-        document.getElementById(
-            "nome"
-        )
-        .value
-        .trim();
-
-
-    const cliente =
-        document.getElementById(
-            "cliente"
-        )
-        .value
-        .trim();
-
-
-    const rotaTemp =
-        document.getElementById(
-            "rotaTemp"
-        )
-        .value
-        .trim();
-
-
-    const rotaHum =
-        document.getElementById(
-            "rotaHum"
-        )
-        .value
-        .trim();
-
-
-    const rotaLastSeen =
-        document.getElementById(
-            "rotaLastSeen"
-        )
-        .value
-        .trim();
-
-
-    if (
-        !rotaTemp ||
-        !rotaHum ||
-        !rotaLastSeen
-    ) {
-
-        alert(
-            "Informe todas as rotas do sensor."
-        );
-
-        return;
-
-    }
-
-
-    // =================================================
-    // DADOS
-    // =================================================
-
-    const dados = {
-
-        nome:
-            nome,
-
-
-        clientID:
-            cliente,
-
-
-        rotaTemp:
-            rotaTemp,
-
-
-        rotaHum:
-            rotaHum,
-
-
-        rotaLastSeen:
-            rotaLastSeen
-
-    };
-
-
-    const referencia =
-        db.ref(
-            `central_sensores/${id}`
-        );
-
-
-    referencia
-    .set(dados)
-    .then(
-        () => {
-
-            alert(
-                editando
-                ?
-                "Sensor atualizado!"
-                :
-                "Sensor cadastrado!"
-            );
-
-
-            fecharModal();
-
-        }
-    )
-    .catch(
-        error => {
-
-            console.error(
-                error
-            );
-
-
-            alert(
-                "Erro ao salvar. Verifique as regras do Firebase."
-            );
-
-        }
-    );
-
-}
-
-
-
-// =====================================================
-// EXCLUIR
-// =====================================================
-
-function excluir(id){
-
-    if (
-        !confirm(
-            `Excluir ${id}?`
-        )
-    )
-        return;
-
-
-    db.ref(
-        `central_sensores/${id}`
-    )
-    .remove()
-    .then(
-        () => {
-
-            alert(
-                "Sensor removido."
-            );
-
-        }
-    )
-    .catch(
-        error => {
-
-            console.error(
-                error
-            );
-
-
-            alert(
-                "Erro ao excluir."
-            );
-
-        }
-    );
-
-}
-
-
-
-// =====================================================
-// ESCAPE HTML
-// =====================================================
-
-function escapeHtml(valor){
-
-    return String(valor)
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
-
-
-
-// =====================================================
-// ESCAPE PARA ATRIBUTO
-// =====================================================
-
-function escapeAttr(valor){
-
-    return String(valor)
-        .replace(
-            /\\/g,
-            "\\\\"
-        )
-        .replace(
-            /'/g,
-            "\\'"
-        );
-
-}
-
-
-
-// =====================================================
-// ESCUTAR ENTER / ESC NO MODAL
-// =====================================================
-
-document.addEventListener(
-    "keydown",
-    event => {
-
-        if (
-            event.key === "Escape"
-        ) {
-
-            fecharModal();
-
+            document.getElementById("status").textContent = "● Erro de conexão";
+        });
+
+        // CRIAR CARD
+        function criarCard(id, sensor) {
+            const container = document.getElementById("sensores");
+            const card = document.createElement("div");
+            card.id = `card-${id}`;
+            card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm p-5";
+
+            card.innerHTML = `
+                <div class="flex justify-between">
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold">${escapeHtml(id)}</p>
+                        <h2 class="text-lg font-bold text-slate-800">${escapeHtml(sensor.nome || "Sensor")}</h2>
+                        <p class="text-xs text-slate-500">Cliente: ${escapeHtml(sensor.clientID || "-")}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editar('${escapeAttr(id)}')" class="bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">✏️</button>
+                        <button onclick="excluir('${escapeAttr(id)}')" class="bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">🗑️</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-5">
+                    <div class="bg-slate-50 rounded-xl p-4 text-center">
+                        <p class="text-xs text-slate-500">Temperatura</p>
+                        <strong id="temp-${escapeAttr(id)}" class="text-2xl text-slate-800">-- °C</strong>
+                    </div>
+                    <div class="bg-slate-50 rounded-xl p-4 text-center">
+                        <p class="text-xs text-slate-500">Umidade</p>
+                        <strong id="hum-${escapeAttr(id)}" class="text-2xl text-slate-800">-- %</strong>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center mt-4 pt-3 border-t">
+                    <span id="online-${escapeAttr(id)}" class="text-sm text-slate-500">● Offline</span>
+                    <span id="seen-${escapeAttr(id)}" class="text-xs text-slate-500">--</span>
+                </div>
+
+                <a href="historico.html?id=${encodeURIComponent(id)}" target="_blank" class="block text-center bg-blue-50 text-blue-600 font-bold rounded-xl py-3 mt-4">
+                    Ver Histórico
+                </a>
+            `;
+
+            container.appendChild(card);
+
+            if (sensor.rotaTemp) {
+                ouvirRota(sensor.rotaTemp, valor => {
+                    const elemento = document.getElementById(`temp-${id}`);
+                    if (elemento && Number.isFinite(valor)) {
+                        elemento.textContent = valor.toFixed(1) + " °C";
+                    }
+                });
+            }
+
+            if (sensor.rotaHum) {
+                ouvirRota(sensor.rotaHum, valor => {
+                    const elemento = document.getElementById(`hum-${id}`);
+                    if (elemento && Number.isFinite(valor)) {
+                        elemento.textContent = valor.toFixed(1) + " %";
+                    }
+                });
+            }
+
+            if (sensor.rotaLastSeen) {
+                ouvirRota(sensor.rotaLastSeen, valor => {
+                    atualizarOnline(id, valor);
+                });
+            }
         }
 
-    }
-);
+        // OUVIR ROTA
+        function ouvirRota(rota, callback) {
+            if (!rota) return;
+            const rotaLimpa = normalizarRota(rota);
+            const ref = db.ref(rotaLimpa);
 
-</script>
+            ref.on("value", snapshot => {
+                const valor = Number(snapshot.val());
+                callback(valor);
+            });
 
+            listeners[rotaLimpa] = ref;
+        }
+
+        // NORMALIZAR ROTA
+        function normalizarRota(rota) {
+            if (!rota) return "";
+            rota = String(rota).trim();
+            if (rota.startsWith("/")) {
+                rota = rota.substring(1);
+            }
+            return rota;
+        }
+
+        // ONLINE / OFFLINE
+        function atualizarOnline(id, timestamp) {
+            if (!Number.isFinite(Number(timestamp))) return;
+
+            let ts = Number(timestamp);
+            if (ts > 100000000000) {
+                ts = Math.floor(ts / 1000);
+            }
+
+            const segundos = Math.floor(Date.now() / 1000) - ts;
+            const online = segundos >= 0 && segundos < 60;
+
+            const elemento = document.getElementById(`online-${id}`);
+            const hora = document.getElementById(`seen-${id}`);
+
+            if (!elemento) return;
+
+            if (online) {
+                elemento.textContent = "● Online";
+                elemento.className = "text-sm text-emerald-600 font-bold";
+            } else {
+                elemento.textContent = "● Offline";
+                elemento.className = "text-sm text-rose-600 font-bold";
+            }
+
+            if (hora) {
+                hora.textContent = new Date(ts * 1000).toLocaleTimeString("pt-BR");
+            }
+        }
+
+        // NOVO SENSOR
+        function abrirModal() {
+            editando = false;
+            sensorEditando = null;
+            document.getElementById("titulo").textContent = "Novo Sensor";
+            document.querySelector("form").reset();
+            document.getElementById("id").disabled = false;
+            document.getElementById("id").oninput = sugerirRotas;
+            document.getElementById("modal").classList.remove("hidden");
+        }
+
+        // SUGERIR ROTAS
+        function sugerirRotas() {
+            if (editando) return;
+            const valor = document.getElementById("id").value.trim().toUpperCase();
+            const resultado = valor.match(/^SENSOR_(\d+)$/);
+            if (!resultado) return;
+
+            const numero = Number(resultado[1]);
+            if (numero === 1) {
+                document.getElementById("rotaTemp").value = "/temp";
+                document.getElementById("rotaHum").value = "/hum";
+                document.getElementById("rotaLastSeen").value = "/last_seen";
+            } else {
+                document.getElementById("rotaTemp").value = `/temp${numero}`;
+                document.getElementById("rotaHum").value = `/hum${numero}`;
+                document.getElementById("rotaLastSeen").value = `/last_seen${numero}`;
+            }
+        }
+
+        // FECHAR MODAL
+        function fecharModal() {
+            document.getElementById("modal").classList.add("hidden");
+        }
+
+        // EDITAR SENSOR
+        function editar(id) {
+            db.ref(`central_sensores/${id}`).once("value").then(snapshot => {
+                if (!snapshot.exists()) {
+                    alert("Sensor não encontrado.");
+                    return;
+                }
+
+                const s = snapshot.val();
+                editando = true;
+                sensorEditando = id;
+
+                document.getElementById("titulo").textContent = "Editar " + id;
+                const campoId = document.getElementById("id");
+                campoId.value = id;
+                campoId.disabled = true;
+                campoId.oninput = null;
+
+                document.getElementById("nome").value = s.nome || "";
+                document.getElementById("cliente").value = s.clientID || "";
+                document.getElementById("rotaTemp").value = s.rotaTemp || "";
+                document.getElementById("rotaHum").value = s.rotaHum || "";
+                document.getElementById("rotaLastSeen").value = s.rotaLastSeen || "";
+
+                document.getElementById("modal").classList.remove("hidden");
+            }).catch(error => {
+                console.error(error);
+                alert("Erro ao carregar sensor.");
+            });
+        }
+
+        // SALVAR SENSOR
+        function salvar(event) {
+            event.preventDefault();
+            const id = document.getElementById("id").value.trim().toUpperCase().replace(/\s+/g, "_");
+            const resultado = id.match(/^SENSOR_(\d+)$/);
+
+            if (!resultado) {
+                alert("Use o formato SENSOR_01, SENSOR_02, SENSOR_03...");
+                return;
+            }
+
+            const numero = Number(resultado[1]);
+            if (numero < 1 || numero > 999) {
+                alert("Número do sensor inválido.");
+                return;
+            }
+
+            const nome = document.getElementById("nome").value.trim();
+            const cliente = document.getElementById("cliente").value.trim();
+            const rotaTemp = document.getElementById("rotaTemp").value.trim();
+            const rotaHum = document.getElementById("rotaHum").value.trim();
+            const rotaLastSeen = document.getElementById("rotaLastSeen").value.trim();
+
+            if (!rotaTemp || !rotaHum || !rotaLastSeen) {
+                alert("Informe todas as rotas do sensor.");
+                return;
+            }
+
+            const dados = {
+                nome: nome,
+                clientID: cliente,
+                rotaTemp: rotaTemp,
+                rotaHum: rotaHum,
+                rotaLastSeen: rotaLastSeen
+            };
+
+            db.ref(`central_sensores/${id}`).set(dados).then(() => {
+                alert(editando ? "Sensor atualizado!" : "Sensor cadastrado!");
+                fecharModal();
+            }).catch(error => {
+                console.error(error);
+                alert("Erro ao salvar. Verifique as regras do Firebase.");
+            });
+        }
+
+        // EXCLUIR SENSOR
+        function excluir(id) {
+            if (!confirm(`Excluir ${id}?`)) return;
+
+            db.ref(`central_sensores/${id}`).remove().then(() => {
+                alert("Sensor removido.");
+            }).catch(error => {
+                console.error(error);
+                alert("Erro ao excluir.");
+            });
+        }
+
+        // ESCAPE HTML
+        function escapeHtml(valor) {
+            return String(valor)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // ESCAPE ATRIBUTO
+        function escapeAttr(valor) {
+            return String(valor)
+                .replace(/\\/g, "\\\\")
+                .replace(/'/g, "\\'");
+        }
+
+        // ATALHO TECLADO (ESC)
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape") {
+                fecharModal();
+            }
+        });
+    </script>
 </body>
 
 </html>
