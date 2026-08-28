@@ -1,11 +1,10 @@
-<!doctype html>
-
+```html
+<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
 
-```
-<meta charset="utf-8">
+<meta charset="UTF-8">
 
 <meta
     name="viewport"
@@ -21,457 +20,412 @@
 
 <style>
 
-    :root {
+:root {
 
-        --brand-primary: #1a365d;
-        --brand-accent: #007aff;
+    --brand-primary:#1a365d;
+    --brand-accent:#007aff;
 
-        --bg-body: #f8fafc;
-        --card-bg: #ffffff;
+    --bg-body:#f8fafc;
+    --card-bg:#ffffff;
 
-        --text-main: #1e293b;
-        --text-muted: #64748b;
+    --text-main:#1e293b;
+    --text-muted:#64748b;
 
-        --border: #e2e8f0;
+    --border:#e2e8f0;
 
-        --danger: #e11d48;
-        --success: #10b981;
+    --danger:#e11d48;
+    --success:#10b981;
 
-        --shadow:
-            0 10px 15px -3px rgba(0,0,0,0.1);
+    --shadow:
+        0 10px 15px -3px rgba(0,0,0,.1);
 
-    }
+}
 
+* {
+    box-sizing:border-box;
+}
 
-    * {
-        box-sizing: border-box;
-    }
+body {
 
+    margin:0;
 
-    body {
+    font-family:'Inter',sans-serif;
 
-        margin: 0;
+    background:var(--bg-body);
 
-        font-family: 'Inter', sans-serif;
+    color:var(--text-main);
 
-        background: var(--bg-body);
+    display:flex;
 
-        color: var(--text-main);
+    justify-content:center;
 
-        display: flex;
+    padding:20px;
 
-        justify-content: center;
+}
 
-        padding: 20px;
+.card {
 
-    }
+    background:var(--card-bg);
 
+    border-radius:16px;
+
+    padding:30px;
+
+    width:100%;
+
+    max-width:1100px;
+
+    border:1px solid var(--border);
+
+    box-shadow:var(--shadow);
+
+}
+
+header {
+
+    border-left:6px solid var(--brand-primary);
+
+    padding-left:20px;
+
+    margin-bottom:25px;
+
+}
+
+header h1 {
+
+    margin:0;
+
+    font-size:26px;
+
+    font-weight:800;
+
+    color:var(--brand-primary);
+
+    letter-spacing:-1px;
+
+}
+
+header p {
+
+    margin:4px 0 0;
+
+    color:var(--brand-accent);
+
+    font-size:12px;
+
+    font-weight:700;
+
+    text-transform:uppercase;
+
+    letter-spacing:1px;
+
+}
+
+.info-bar {
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:15px;
+
+    background:#f8fafc;
+
+    border:1px solid var(--border);
+
+    border-radius:12px;
+
+    padding:14px 16px;
+
+    margin-bottom:20px;
+
+    flex-wrap:wrap;
+
+}
+
+.sensor-info {
+
+    font-size:13px;
+
+    color:var(--text-muted);
+
+}
+
+.sensor-info strong {
+
+    color:var(--brand-primary);
+
+}
+
+.tabs {
+
+    display:flex;
+
+    background:#f1f5f9;
+
+    padding:4px;
+
+    border-radius:12px;
+
+    margin-bottom:25px;
+
+    gap:4px;
+
+    flex-wrap:wrap;
+
+}
+
+.tab {
+
+    flex:1;
+
+    min-width:100px;
+
+    padding:12px;
+
+    text-align:center;
+
+    border-radius:9px;
+
+    cursor:pointer;
+
+    font-size:12px;
+
+    font-weight:600;
+
+    color:var(--text-muted);
+
+    transition:.3s;
+
+}
+
+.tab.active {
+
+    background:white;
+
+    color:var(--brand-primary);
+
+    box-shadow:
+        0 4px 6px -1px rgba(0,0,0,.05);
+
+}
+
+.chart-container {
+
+    background:#fff;
+
+    border-radius:12px;
+
+    padding:15px;
+
+    margin-bottom:30px;
+
+    border:1px solid var(--border);
+
+    height:380px;
+
+}
+
+#lista {
+
+    max-height:500px;
+
+    overflow-y:auto;
+
+    padding-right:10px;
+
+}
+
+.data-divider {
+
+    color:var(--brand-primary);
+
+    font-size:11px;
+
+    font-weight:800;
+
+    margin:25px 0 12px;
+
+    display:flex;
+
+    align-items:center;
+
+}
+
+.data-divider::after {
+
+    content:"";
+
+    flex:1;
+
+    height:1px;
+
+    background:var(--border);
+
+    margin-left:15px;
+
+}
+
+.item {
+
+    background:#fff;
+
+    padding:14px 18px;
+
+    border-radius:10px;
+
+    margin-bottom:8px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    border:1px solid var(--border);
+
+}
+
+.item.alerta {
+
+    border-left:4px solid var(--danger);
+
+    background:#fff1f2;
+
+}
+
+.btn-group {
+
+    display:flex;
+
+    gap:15px;
+
+    margin-top:30px;
+
+}
+
+.btn {
+
+    flex:1;
+
+    padding:16px;
+
+    border:none;
+
+    border-radius:12px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    font-size:14px;
+
+}
+
+.btn-pdf {
+
+    background:var(--brand-primary);
+
+    color:#fff;
+
+}
+
+.btn-pdf:disabled {
+
+    background:#94a3b8;
+
+    cursor:not-allowed;
+
+}
+
+.btn-back {
+
+    background:#fff;
+
+    color:var(--text-muted);
+
+    border:1.5px solid var(--border);
+
+}
+
+.valor-critico {
+
+    color:var(--danger)!important;
+
+    font-weight:900;
+
+}
+
+.normal {
+
+    color:var(--success);
+
+    font-weight:800;
+
+}
+
+#lista::-webkit-scrollbar {
+
+    width:5px;
+
+}
+
+#lista::-webkit-scrollbar-thumb {
+
+    background:#cbd5e1;
+
+    border-radius:10px;
+
+}
+
+.erro {
+
+    background:#fff1f2;
+
+    border:1px solid #fecdd3;
+
+    color:#be123c;
+
+    padding:15px;
+
+    border-radius:10px;
+
+    margin-bottom:20px;
+
+    font-size:13px;
+
+}
+
+@media(max-width:700px) {
 
     .card {
-
-        background: var(--card-bg);
-
-        border-radius: 16px;
-
-        padding: 30px;
-
-        width: 100%;
-
-        max-width: 1100px;
-
-        border: 1px solid var(--border);
-
-        box-shadow: var(--shadow);
-
+        padding:18px;
     }
-
-
-    header {
-
-        border-left: 6px solid var(--brand-primary);
-
-        padding-left: 20px;
-
-        margin-bottom: 25px;
-
-    }
-
-
-    header h1 {
-
-        margin: 0;
-
-        font-size: 26px;
-
-        font-weight: 800;
-
-        color: var(--brand-primary);
-
-        letter-spacing: -1px;
-
-    }
-
-
-    header p {
-
-        margin: 4px 0 0;
-
-        color: var(--brand-accent);
-
-        font-size: 12px;
-
-        font-weight: 700;
-
-        text-transform: uppercase;
-
-        letter-spacing: 1px;
-
-    }
-
-
-    .info-bar {
-
-        display: flex;
-
-        justify-content: space-between;
-
-        align-items: center;
-
-        gap: 15px;
-
-        background: #f8fafc;
-
-        border: 1px solid var(--border);
-
-        border-radius: 12px;
-
-        padding: 14px 16px;
-
-        margin-bottom: 20px;
-
-        flex-wrap: wrap;
-
-    }
-
-
-    .sensor-info {
-
-        font-size: 13px;
-
-        color: var(--text-muted);
-
-    }
-
-
-    .sensor-info strong {
-
-        color: var(--brand-primary);
-
-    }
-
-
-    .tabs {
-
-        display: flex;
-
-        background: #f1f5f9;
-
-        padding: 4px;
-
-        border-radius: 12px;
-
-        margin-bottom: 25px;
-
-        gap: 4px;
-
-        flex-wrap: wrap;
-
-    }
-
-
-    .tab {
-
-        flex: 1;
-
-        min-width: 100px;
-
-        padding: 12px;
-
-        text-align: center;
-
-        border-radius: 9px;
-
-        cursor: pointer;
-
-        font-size: 12px;
-
-        font-weight: 600;
-
-        color: var(--text-muted);
-
-        transition: 0.3s;
-
-    }
-
-
-    .tab.active {
-
-        background: white;
-
-        color: var(--brand-primary);
-
-        box-shadow:
-            0 4px 6px -1px rgba(0,0,0,0.05);
-
-    }
-
 
     .chart-container {
-
-        background: #fff;
-
-        border-radius: 12px;
-
-        padding: 15px;
-
-        margin-bottom: 30px;
-
-        border: 1px solid var(--border);
-
-        height: 380px;
-
+        height:300px;
     }
-
-
-    #lista {
-
-        max-height: 500px;
-
-        overflow-y: auto;
-
-        padding-right: 10px;
-
-    }
-
-
-    .data-divider {
-
-        color: var(--brand-primary);
-
-        font-size: 11px;
-
-        font-weight: 800;
-
-        margin: 25px 0 12px;
-
-        display: flex;
-
-        align-items: center;
-
-    }
-
-
-    .data-divider::after {
-
-        content: "";
-
-        flex: 1;
-
-        height: 1px;
-
-        background: var(--border);
-
-        margin-left: 15px;
-
-    }
-
-
-    .item {
-
-        background: #fff;
-
-        padding: 14px 18px;
-
-        border-radius: 10px;
-
-        margin-bottom: 8px;
-
-        display: flex;
-
-        justify-content: space-between;
-
-        align-items: center;
-
-        border: 1px solid var(--border);
-
-        transition: 0.2s;
-
-    }
-
-
-    .item.alerta {
-
-        border-left: 4px solid var(--danger);
-
-        background: #fff1f2;
-
-    }
-
 
     .btn-group {
-
-        display: flex;
-
-        gap: 15px;
-
-        margin-top: 30px;
-
+        flex-direction:column;
     }
 
-
-    .btn {
-
-        flex: 1;
-
-        padding: 16px;
-
-        border: none;
-
-        border-radius: 12px;
-
-        font-weight: 700;
-
-        cursor: pointer;
-
-        transition: 0.3s;
-
-        font-size: 14px;
-
+    .item {
+        gap:10px;
+        flex-direction:column;
+        align-items:flex-start;
     }
 
-
-    .btn-pdf {
-
-        background: var(--brand-primary);
-
-        color: #fff;
-
-        box-shadow:
-            0 4px 12px rgba(26,54,93,0.2);
-
-    }
-
-
-    .btn-pdf:disabled {
-
-        background: #94a3b8;
-
-        cursor: not-allowed;
-
-        box-shadow: none;
-
-    }
-
-
-    .btn-back {
-
-        background: #fff;
-
-        color: var(--text-muted);
-
-        border: 1.5px solid var(--border);
-
-    }
-
-
-    .valor-critico {
-
-        color: var(--danger) !important;
-
-        font-weight: 900;
-
-    }
-
-
-    .normal {
-
-        color: var(--success);
-
-        font-weight: 800;
-
-    }
-
-
-    #lista::-webkit-scrollbar {
-
-        width: 5px;
-
-    }
-
-
-    #lista::-webkit-scrollbar-thumb {
-
-        background: #cbd5e1;
-
-        border-radius: 10px;
-
-    }
-
-
-    .erro {
-
-        background: #fff1f2;
-
-        border: 1px solid #fecdd3;
-
-        color: #be123c;
-
-        padding: 15px;
-
-        border-radius: 10px;
-
-        margin-bottom: 20px;
-
-        font-size: 13px;
-
-    }
-
-
-    @media(max-width:700px) {
-
-        .card {
-
-            padding: 18px;
-
-        }
-
-
-        .chart-container {
-
-            height: 300px;
-
-        }
-
-
-        .btn-group {
-
-            flex-direction: column;
-
-        }
-
-
-        .item {
-
-            gap: 10px;
-
-        }
-
-    }
+}
 
 </style>
 
 
-<!-- FIREBASE -->
+<!-- =====================================================
+     FIREBASE
+===================================================== -->
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 
@@ -480,23 +434,28 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 
-<!-- CHART -->
+<!-- =====================================================
+     CHART
+===================================================== -->
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 
-<!-- PDF -->
+<!-- =====================================================
+     PDF
+===================================================== -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-```
 
 </head>
 
+
 <body>
+
 
 <div class="card">
 
-```
+
 <header>
 
     <h1>NEWENERGY</h1>
@@ -506,6 +465,10 @@
 </header>
 
 
+<!-- =====================================================
+     INFORMAÇÕES DO SENSOR
+===================================================== -->
+
 <div class="info-bar">
 
     <div class="sensor-info">
@@ -513,9 +476,7 @@
         Sensor:
 
         <strong id="sensorNome">
-
             Carregando...
-
         </strong>
 
     </div>
@@ -526,9 +487,7 @@
         Local:
 
         <strong id="sensorLocal">
-
             --
-
         </strong>
 
     </div>
@@ -539,9 +498,7 @@
         Cliente:
 
         <strong id="sensorCliente">
-
             --
-
         </strong>
 
     </div>
@@ -551,6 +508,10 @@
 
 <div id="erroFirebase"></div>
 
+
+<!-- =====================================================
+     ABAS
+===================================================== -->
 
 <div class="tabs">
 
@@ -588,6 +549,10 @@
 </div>
 
 
+<!-- =====================================================
+     GRÁFICO
+===================================================== -->
+
 <div class="chart-container">
 
     <canvas id="mainChart"></canvas>
@@ -595,16 +560,22 @@
 </div>
 
 
+<!-- =====================================================
+     LISTA
+===================================================== -->
+
 <div id="lista">
 
-    <p
-        style="text-align:center;padding:40px;"
-    >
+    <p style="text-align:center;padding:40px;">
         Carregando histórico...
     </p>
 
 </div>
 
+
+<!-- =====================================================
+     BOTÕES
+===================================================== -->
 
 <div class="btn-group">
 
@@ -625,9 +596,10 @@
     </button>
 
 </div>
-```
+
 
 </div>
+
 
 <script>
 
@@ -686,19 +658,19 @@ let sensorConfig = null;
 
 let limites = {
 
-    tMin: 0,
+    tMin:0,
 
-    tMax: 40,
+    tMax:40,
 
-    hMin: 0,
+    hMin:0,
 
-    hMax: 100
+    hMax:100
 
 };
 
 
 // =====================================================
-// PEGAR SENSOR DA URL
+// SENSOR DA URL
 // =====================================================
 
 const parametros =
@@ -712,7 +684,7 @@ sensorID =
 
 
 // =====================================================
-// SE NÃO VEIO ID
+// INICIALIZAÇÃO
 // =====================================================
 
 if (!sensorID) {
@@ -722,6 +694,7 @@ if (!sensorID) {
     ).textContent =
         "Nenhum sensor selecionado";
 
+
     document.getElementById(
         "lista"
     ).innerHTML = `
@@ -730,14 +703,17 @@ if (!sensorID) {
 
             Nenhum sensor foi informado.
 
-            Abra o histórico através do painel
-            de um sensor cadastrado.
+            <br><br>
+
+            Abra o histórico através do
+            painel do sensor.
 
         </div>
 
     `;
 
-} else {
+}
+else {
 
     carregarSensor();
 
@@ -745,7 +721,7 @@ if (!sensorID) {
 
 
 // =====================================================
-// CARREGAR CONFIGURAÇÃO DO SENSOR
+// CARREGAR SENSOR
 // =====================================================
 
 async function carregarSensor() {
@@ -762,7 +738,7 @@ async function carregarSensor() {
         if (!snapshot.exists()) {
 
             throw new Error(
-                "Sensor não encontrado em central_sensores."
+                `O sensor ${sensorID} não existe em central_sensores.`
             );
 
         }
@@ -790,7 +766,9 @@ async function carregarSensor() {
             sensorConfig.clientID || "--";
 
 
-        // Carrega limites
+        // =================================================
+        // LIMITES
+        // =================================================
 
         const limiteSnap =
             await db.ref(
@@ -801,11 +779,13 @@ async function carregarSensor() {
 
         if (limiteSnap.exists()) {
 
-            limites =
-                {
-                    ...limites,
-                    ...limiteSnap.val()
-                };
+            limites = {
+
+                ...limites,
+
+                ...limiteSnap.val()
+
+            };
 
         }
 
@@ -816,9 +796,7 @@ async function carregarSensor() {
 
     catch(error) {
 
-        console.error(
-            error
-        );
+        console.error(error);
 
 
         document.getElementById(
@@ -827,7 +805,7 @@ async function carregarSensor() {
 
             <div class="erro">
 
-                Erro ao carregar o sensor.
+                <b>Erro ao carregar o sensor.</b>
 
                 <br><br>
 
@@ -846,9 +824,7 @@ async function carregarSensor() {
 // BUSCAR HISTÓRICO
 // =====================================================
 
-async function fetchData(
-    periodo
-) {
+async function fetchData(periodo) {
 
     const listaDiv =
         document.getElementById(
@@ -858,9 +834,7 @@ async function fetchData(
 
     listaDiv.innerHTML = `
 
-        <p
-            style="text-align:center;padding:40px;"
-        >
+        <p style="text-align:center;padding:40px;">
             Sincronizando dados...
         </p>
 
@@ -882,41 +856,27 @@ async function fetchData(
     try {
 
         // =================================================
-        // IMPORTANTE:
-        //
-        // O histórico está em:
-        //
-        // /historico/diario
-        //
-        // E dentro dele temos as datas.
+        // BUSCA SOMENTE O HISTÓRICO
         // =================================================
 
         const snapshot =
             await db.ref(
-                "/historico/diario"
+                "historico/diario"
             )
             .once("value");
 
 
-        const base =
-            snapshot.val();
+        if (!snapshot.exists()) {
 
-
-        if (!base) {
-
-            listaDiv.innerHTML = `
-
-                <p
-                    style="text-align:center;padding:40px;"
-                >
-                    Sem registros no histórico.
-                </p>
-
-            `;
+            mostrarSemDados();
 
             return;
 
         }
+
+
+        const base =
+            snapshot.val();
 
 
         const agora =
@@ -953,11 +913,10 @@ async function fetchData(
 
 
         // =================================================
-        // PERCORRER DATAS
+        // PERCORRER OS DIAS
         // =================================================
 
-        Object.keys(base)
-        .forEach(
+        Object.keys(base).forEach(
             dataKey => {
 
                 const dadosDia =
@@ -975,64 +934,77 @@ async function fetchData(
 
 
                 // =================================================
-                // PERCORRER REGISTROS
+                // PROCURAR O SENSOR PELO ID
+                //
+                // Exemplo:
+                //
+                // historico
+                //  diario
+                //   2026-08-28
+                //    SENSOR_02
+                //     timestamp
+                //      temp
+                //      hum
                 // =================================================
 
-                Object.keys(dadosDia)
-                .forEach(
-                    chave => {
+                if (
+                    dadosDia[sensorID]
+                ) {
 
-                        const valor =
-                            dadosDia[chave];
+                    const registros =
+                        dadosDia[sensorID];
 
 
-                        // -----------------------------------------
-                        // CASO 1
-                        //
-                        // Estrutura:
-                        //
-                        // 2026-08-28
-                        //    1787924059
-                        //       temp
-                        //       hum
-                        //
-                        // -----------------------------------------
-
-                        if (
-                            chave !== "SENSOR_02" &&
-                            chave !== "SENSOR_03"
-                        ) {
+                    Object.keys(registros)
+                    .forEach(
+                        ts => {
 
                             processarRegistro(
-                                chave,
-                                valor,
-                                dataKey,
+
+                                ts,
+
+                                registros[ts],
+
                                 periodo,
+
                                 agora,
+
                                 inicioHoje,
+
                                 seteDiasAtras
+
                             );
 
                         }
+                    );
+
+                }
 
 
-                        // -----------------------------------------
-                        // CASO 2
-                        //
-                        // Estrutura:
-                        //
-                        // 2026-08-28
-                        //    SENSOR_02
-                        //       1787927344
-                        //          temp
-                        //          hum
-                        //
-                        // -----------------------------------------
+                // =================================================
+                // COMPATIBILIDADE COM ESTRUTURA:
+                //
+                // dia
+                //   timestamp
+                //      temp
+                //      hum
+                //
+                // Essa estrutura só será utilizada se o
+                // histórico não tiver identificação de sensor.
+                // =================================================
 
-                        else {
+                else {
+
+                    Object.keys(dadosDia)
+                    .forEach(
+                        chave => {
+
+                            const registro =
+                                dadosDia[chave];
+
 
                             if (
-                                chave !== sensorID
+                                chave === sensorID
                             ) {
 
                                 return;
@@ -1040,84 +1012,70 @@ async function fetchData(
                             }
 
 
-                            const registrosSensor =
-                                valor;
+                            if (
+                                registro &&
+                                typeof registro === "object" &&
+                                (
+                                    registro.temp !== undefined
+                                    ||
+                                    registro.hum !== undefined
+                                )
+                            ) {
 
+                                processarRegistro(
 
-                            Object.keys(
-                                registrosSensor
-                            )
-                            .forEach(
-                                ts => {
+                                    chave,
 
-                                    processarRegistro(
-                                        ts,
-                                        registrosSensor[ts],
-                                        dataKey,
-                                        periodo,
-                                        agora,
-                                        inicioHoje,
-                                        seteDiasAtras
-                                    );
+                                    registro,
 
-                                }
-                            );
+                                    periodo,
+
+                                    agora,
+
+                                    inicioHoje,
+
+                                    seteDiasAtras
+
+                                );
+
+                            }
 
                         }
+                    );
 
-                    }
-                );
+                }
 
             }
         );
 
 
         // =================================================
-        // FILTRAR SENSOR
-        // =================================================
-
-        globalData =
-            globalData.filter(
-                registro => {
-
-                    // Se o registro possui sensor
-                    // explicitamente, verifica.
-
-                    if (
-                        registro.sensor &&
-                        registro.sensor !== sensorID
-                    ) {
-
-                        return false;
-
-                    }
-
-
-                    return true;
-
-                }
-            );
-
-
-        // =================================================
         // REMOVER DUPLICADOS
         // =================================================
 
+        const mapa =
+            new Map();
+
+
+        globalData.forEach(
+            item => {
+
+                const chave =
+                    `${item.ts}_${item.temp}_${item.hum}`;
+
+
+                mapa.set(
+                    chave,
+                    item
+                );
+
+            }
+        );
+
+
         globalData =
-            globalData.filter(
-                (v, i, a) =>
-
-                    a.findIndex(
-                        t =>
-
-                            t.ts === v.ts
-                            &&
-                            t.temp === v.temp
-                            &&
-                            t.hum === v.hum
-
-                    ) === i
-
+            Array.from(
+                mapa.values()
             );
 
 
@@ -1131,31 +1089,28 @@ async function fetchData(
         );
 
 
+        // =================================================
+        // SEM DADOS
+        // =================================================
+
         if (
             globalData.length === 0
         ) {
 
-            listaDiv.innerHTML = `
-
-                <p
-                    style="text-align:center;padding:40px;"
-                >
-                    Nenhum registro encontrado
-                    para este período.
-                </p>
-
-            `;
+            mostrarSemDados();
 
             return;
 
         }
 
 
+        // =================================================
+        // RENDERIZAR
+        // =================================================
+
         renderUI();
 
-        renderChart(
-            periodo
-        );
+        renderChart(periodo);
 
     }
 
@@ -1171,7 +1126,7 @@ async function fetchData(
 
             <div class="erro">
 
-                Erro ao carregar histórico.
+                <b>Erro ao carregar histórico.</b>
 
                 <br><br>
 
@@ -1196,8 +1151,6 @@ function processarRegistro(
 
     registro,
 
-    dataKey,
-
     periodo,
 
     agora,
@@ -1207,7 +1160,6 @@ function processarRegistro(
     seteDiasAtras
 
 ) {
-
 
     if (
         !registro ||
@@ -1220,20 +1172,20 @@ function processarRegistro(
 
 
     const temp =
-        parseFloat(
+        Number(
             registro.temp
         );
 
 
     const hum =
-        parseFloat(
+        Number(
             registro.hum
         );
 
 
     if (
-        isNaN(temp) ||
-        isNaN(hum)
+        !Number.isFinite(temp) ||
+        !Number.isFinite(hum)
     ) {
 
         return;
@@ -1241,15 +1193,31 @@ function processarRegistro(
     }
 
 
-    const timestamp =
-        parseInt(ts);
+    let timestamp =
+        Number(ts);
 
 
     if (
-        isNaN(timestamp)
+        !Number.isFinite(timestamp)
     ) {
 
         return;
+
+    }
+
+
+    // =================================================
+    // CASO O TIMESTAMP VENHA EM MILISSEGUNDOS
+    // =================================================
+
+    if (
+        timestamp > 100000000000
+    ) {
+
+        timestamp =
+            Math.floor(
+                timestamp / 1000
+            );
 
     }
 
@@ -1258,16 +1226,30 @@ function processarRegistro(
         timestamp * 1000;
 
 
-    const dObj =
+    const data =
         new Date(
             tsM
         );
 
 
-    let ok = false;
+    if (
+        isNaN(
+            data.getTime()
+        )
+    ) {
+
+        return;
+
+    }
 
 
+    let incluir =
+        false;
+
+
+    // =================================================
     // HOJE
+    // =================================================
 
     if (
         periodo === "diario"
@@ -1275,12 +1257,14 @@ function processarRegistro(
         tsM >= inicioHoje
     ) {
 
-        ok = true;
+        incluir = true;
 
     }
 
 
-    // 7 DIAS
+    // =================================================
+    // ÚLTIMOS 7 DIAS
+    // =================================================
 
     else if (
         periodo === "semanal"
@@ -1288,43 +1272,47 @@ function processarRegistro(
         tsM >= seteDiasAtras
     ) {
 
-        ok = true;
+        incluir = true;
 
     }
 
 
-    // MÊS
+    // =================================================
+    // MÊS ATUAL
+    // =================================================
 
     else if (
         periodo === "mensal"
         &&
-        dObj.getMonth()
+        data.getMonth()
             === agora.getMonth()
         &&
-        dObj.getFullYear()
+        data.getFullYear()
             === agora.getFullYear()
     ) {
 
-        ok = true;
+        incluir = true;
 
     }
 
 
-    // ANO
+    // =================================================
+    // ANO ATUAL
+    // =================================================
 
     else if (
         periodo === "anual"
         &&
-        dObj.getFullYear()
+        data.getFullYear()
             === agora.getFullYear()
     ) {
 
-        ok = true;
+        incluir = true;
 
     }
 
 
-    if (!ok) {
+    if (!incluir) {
 
         return;
 
@@ -1333,33 +1321,49 @@ function processarRegistro(
 
     globalData.push({
 
-        ts:
-            timestamp,
+        ts:timestamp,
 
-        temp:
-            temp,
+        temp:temp,
 
-        hum:
-            hum,
+        hum:hum,
 
         data:
-            dObj.toLocaleDateString(
+            data.toLocaleDateString(
                 "pt-BR"
             ),
 
         hora:
-            dObj.toLocaleTimeString(
+            data.toLocaleTimeString(
                 "pt-BR",
                 {
-                    hour:
-                        "2-digit",
-
-                    minute:
-                        "2-digit"
+                    hour:"2-digit",
+                    minute:"2-digit"
                 }
             )
 
     });
+
+}
+
+
+// =====================================================
+// SEM DADOS
+// =====================================================
+
+function mostrarSemDados() {
+
+    document.getElementById(
+        "lista"
+    ).innerHTML = `
+
+        <p style="text-align:center;padding:40px;">
+
+            Nenhum registro encontrado
+            para este período.
+
+        </p>
+
+    `;
 
 }
 
@@ -1379,36 +1383,36 @@ function renderUI() {
     listaDiv.innerHTML = "";
 
 
-    let lastD = "";
+    let ultimaData = "";
 
 
     globalData.forEach(
         d => {
 
             if (
-                d.data !== lastD
+                d.data !== ultimaData
             ) {
 
-                const div =
+                const divisor =
                     document.createElement(
                         "div"
                     );
 
 
-                div.className =
+                divisor.className =
                     "data-divider";
 
 
-                div.innerHTML =
+                divisor.innerHTML =
                     `<span>${d.data}</span>`;
 
 
                 listaDiv.appendChild(
-                    div
+                    divisor
                 );
 
 
-                lastD =
+                ultimaData =
                     d.data;
 
             }
@@ -1474,18 +1478,17 @@ function renderUI() {
 
 
                         <span
-                            style="font-weight:700"
-                            class="
-                                ${
-                                    erroTemp
-                                    ?
-                                    "valor-critico"
-                                    :
-                                    ""
-                                }
-                            "
+                            class="${
+                                erroTemp
+                                ?
+                                "valor-critico"
+                                :
+                                ""
+                            }"
                         >
+
                             ${d.temp.toFixed(1)}°C
+
                         </span>
 
                     </div>
@@ -1505,18 +1508,17 @@ function renderUI() {
 
 
                         <span
-                            style="font-weight:700"
-                            class="
-                                ${
-                                    erroHum
-                                    ?
-                                    "valor-critico"
-                                    :
-                                    ""
-                                }
-                            "
+                            class="${
+                                erroHum
+                                ?
+                                "valor-critico"
+                                :
+                                ""
+                            }"
                         >
+
                             ${d.hum.toFixed(1)}%
+
                         </span>
 
                     </div>
@@ -1536,16 +1538,15 @@ function renderUI() {
 
 
                         <span
-                            class="
-                                ${
-                                    erro
-                                    ?
-                                    "valor-critico"
-                                    :
-                                    "normal"
-                                }
-                            "
+                            class="${
+                                erro
+                                ?
+                                "valor-critico"
+                                :
+                                "normal"
+                            }"
                         >
+
                             ${
                                 erro
                                 ?
@@ -1553,6 +1554,7 @@ function renderUI() {
                                 :
                                 "NORMAL"
                             }
+
                         </span>
 
                     </div>
@@ -1576,11 +1578,9 @@ function renderUI() {
 // GRÁFICO
 // =====================================================
 
-function renderChart(
-    periodo
-) {
+function renderChart(periodo) {
 
-    const chartData =
+    const dados =
         [...globalData]
         .sort(
             (a,b) =>
@@ -1609,7 +1609,7 @@ function renderChart(
 
     gradT.addColorStop(
         0,
-        "rgba(244,63,94,0.2)"
+        "rgba(244,63,94,.2)"
     );
 
 
@@ -1630,7 +1630,7 @@ function renderChart(
 
     gradH.addColorStop(
         0,
-        "rgba(0,122,255,0.2)"
+        "rgba(0,122,255,.2)"
     );
 
 
@@ -1645,13 +1645,13 @@ function renderChart(
             ctx,
             {
 
-                type:
-                    "line",
+                type:"line",
 
-                data: {
+                data:{
 
                     labels:
-                        chartData.map(
+
+                        dados.map(
                             d => {
 
                                 if (
@@ -1660,7 +1660,11 @@ function renderChart(
                                     periodo === "semanal"
                                 ) {
 
-                                    return `${d.data.split("/")[0]}/${d.data.split("/")[1]} ${d.hora}`;
+                                    return `${
+                                        d.data.split("/")[0]
+                                    }/${
+                                        d.data.split("/")[1]
+                                    } ${d.hora}`;
 
                                 }
 
@@ -1669,7 +1673,7 @@ function renderChart(
                             }
                         ),
 
-                    datasets: [
+                    datasets:[
 
                         {
 
@@ -1677,7 +1681,7 @@ function renderChart(
                                 "Temperatura (°C)",
 
                             data:
-                                chartData.map(
+                                dados.map(
                                     d =>
                                         d.temp
                                 ),
@@ -1688,21 +1692,18 @@ function renderChart(
                             backgroundColor:
                                 gradT,
 
-                            fill:
-                                true,
+                            fill:true,
 
-                            tension:
-                                0.4,
+                            tension:.4,
 
                             pointRadius:
-                                chartData.length > 50
+                                dados.length > 50
                                 ?
                                 0
                                 :
                                 2,
 
-                            borderWidth:
-                                2
+                            borderWidth:2
 
                         },
 
@@ -1713,7 +1714,7 @@ function renderChart(
                                 "Umidade (%)",
 
                             data:
-                                chartData.map(
+                                dados.map(
                                     d =>
                                         d.hum
                                 ),
@@ -1724,21 +1725,18 @@ function renderChart(
                             backgroundColor:
                                 gradH,
 
-                            fill:
-                                true,
+                            fill:true,
 
-                            tension:
-                                0.4,
+                            tension:.4,
 
                             pointRadius:
-                                chartData.length > 50
+                                dados.length > 50
                                 ?
                                 0
                                 :
                                 2,
 
-                            borderWidth:
-                                2
+                            borderWidth:2
 
                         }
 
@@ -1747,38 +1745,32 @@ function renderChart(
                 },
 
 
-                options: {
+                options:{
 
-                    responsive:
-                        true,
+                    responsive:true,
 
-                    maintainAspectRatio:
-                        false,
+                    maintainAspectRatio:false,
 
-                    interaction: {
+                    interaction:{
 
-                        mode:
-                            "index",
+                        mode:"index",
 
-                        intersect:
-                            false
+                        intersect:false
 
                     },
 
 
-                    plugins: {
+                    plugins:{
 
-                        legend: {
+                        legend:{
 
-                            labels: {
+                            labels:{
 
-                                font: {
+                                font:{
 
-                                    family:
-                                        "Inter",
+                                    family:"Inter",
 
-                                    weight:
-                                        "bold"
+                                    weight:"bold"
 
                                 }
 
@@ -1789,29 +1781,26 @@ function renderChart(
                     },
 
 
-                    scales: {
+                    scales:{
 
-                        x: {
+                        x:{
 
-                            ticks: {
+                            ticks:{
 
-                                autoSkip:
-                                    true,
+                                autoSkip:true,
 
-                                maxTicksLimit:
-                                    12
+                                maxTicksLimit:12
 
                             }
 
                         },
 
 
-                        y: {
+                        y:{
 
-                            grid: {
+                            grid:{
 
-                                color:
-                                    "#f1f5f9"
+                                color:"#f1f5f9"
 
                             }
 
@@ -1874,15 +1863,20 @@ async function exportarPDF() {
         true;
 
 
-    const originalText =
+    const textoOriginal =
         btn.innerText;
+
+
+    const linhasPorPagina =
+        28;
 
 
     const totalPaginas =
         Math.max(
             1,
             Math.ceil(
-                globalData.length / 28
+                globalData.length /
+                linhasPorPagina
             )
         );
 
@@ -1965,19 +1959,20 @@ async function exportarPDF() {
             195,
             15,
             {
-                align:
-                    "right"
+                align:"right"
             }
         );
 
 
         doc.text(
-            `DATA: ${new Date().toLocaleDateString("pt-BR")}`,
+            `DATA: ${
+                new Date()
+                .toLocaleDateString("pt-BR")
+            }`,
             195,
             21,
             {
-                align:
-                    "right"
+                align:"right"
             }
         );
 
@@ -1987,8 +1982,7 @@ async function exportarPDF() {
             195,
             27,
             {
-                align:
-                    "right"
+                align:"right"
             }
         );
 
@@ -2095,8 +2089,7 @@ async function exportarPDF() {
     }
 
 
-    let pagina =
-        1;
+    let pagina = 1;
 
 
     header(
@@ -2105,13 +2098,7 @@ async function exportarPDF() {
 
 
     let y =
-        55;
-
-
-    y =
-        tableHead(
-            y
-        );
+        tableHead(55);
 
 
     for (
@@ -2140,9 +2127,7 @@ async function exportarPDF() {
 
 
             y =
-                tableHead(
-                    55
-                );
+                tableHead(55);
 
         }
 
@@ -2194,7 +2179,8 @@ async function exportarPDF() {
                 "bold"
             );
 
-        } else {
+        }
+        else {
 
             doc.setTextColor(
                 51,
@@ -2211,13 +2197,11 @@ async function exportarPDF() {
         }
 
 
-        doc.setFontSize(
-            8
-        );
+        doc.setFontSize(8);
 
 
         doc.text(
-            `${d.data}  ${d.hora}`,
+            `${d.data} ${d.hora}`,
             20,
             y
         );
@@ -2252,7 +2236,8 @@ async function exportarPDF() {
                 y
             );
 
-        } else {
+        }
+        else {
 
             doc.setTextColor(
                 16,
@@ -2278,15 +2263,18 @@ async function exportarPDF() {
         ) {
 
             btn.innerText =
-                `Gerando... ${Math.round(
-                    (i / globalData.length) * 100
-                )}%`;
+                `Gerando... ${
+                    Math.round(
+                        (i / globalData.length)
+                        * 100
+                    )
+                }%`;
 
 
             await new Promise(
-                r =>
+                resolve =>
                     setTimeout(
-                        r,
+                        resolve,
                         1
                     )
             );
@@ -2296,9 +2284,7 @@ async function exportarPDF() {
     }
 
 
-    doc.setFontSize(
-        7
-    );
+    doc.setFontSize(7);
 
 
     doc.setTextColor(
@@ -2313,17 +2299,20 @@ async function exportarPDF() {
         105,
         292,
         {
-            align:
-                "center"
+            align:"center"
         }
     );
 
 
     doc.save(
-        `Relatorio_NewEnergy_${sensorID}_${aba.replace(
-            / /g,
-            "_"
-        )}.pdf`
+        `Relatorio_NewEnergy_${
+            sensorID
+        }_${
+            aba.replace(
+                / /g,
+                "_"
+            )
+        }.pdf`
     );
 
 
@@ -2332,7 +2321,7 @@ async function exportarPDF() {
 
 
     btn.innerText =
-        originalText;
+        textoOriginal;
 
 }
 
@@ -2344,9 +2333,11 @@ async function exportarPDF() {
 function voltar() {
 
     window.location.href =
-        `painel.html?id=${encodeURIComponent(
-            sensorID || ""
-        )}`;
+        `painel.html?id=${
+            encodeURIComponent(
+                sensorID || ""
+            )
+        }`;
 
 }
 
@@ -2356,9 +2347,7 @@ function voltar() {
 // =====================================================
 
 document
-.querySelectorAll(
-    ".tab"
-)
+.querySelectorAll(".tab")
 .forEach(
     tab => {
 
@@ -2367,9 +2356,7 @@ document
             function() {
 
                 document
-                .querySelectorAll(
-                    ".tab"
-                )
+                .querySelectorAll(".tab")
                 .forEach(
                     x =>
                         x.classList.remove(
@@ -2399,3 +2386,4 @@ document
 </body>
 
 </html>
+```
