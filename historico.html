@@ -266,19 +266,20 @@
 
     async function carregarSensor() {
         try {
+            // Reseta limites para undefined a cada recarga
             state.limites = { tMin: undefined, tMax: undefined, hMin: undefined, hMax: undefined };
 
-            const sensorIDNorm = state.sensorID ? state.sensorID.trim() : "";
-            
-            const sensorSnap = await db.ref(`central_sensores/${sensorIDNorm}`).once("value");
+            const sensorSnap = await db.ref(`central_sensores/${state.sensorID}`).once("value");
             
             if (sensorSnap.exists()) {
                 state.sensorConfig = sensorSnap.val();
-                elements.sensorNome.textContent = sensorIDNorm;
+                elements.sensorNome.textContent = state.sensorID;
                 elements.sensorLocal.textContent = state.sensorConfig.nome || state.sensorConfig.local || "--";
                 elements.sensorCliente.textContent = state.sensorConfig.clientID || state.sensorConfig.cliente || "--";
 
                 const s = state.sensorConfig;
+
+                // Lê as variações de chaves possíveis no Firebase
                 const parseNum = (val) => (val !== undefined && val !== null && val !== "") ? Number(val) : undefined;
 
                 state.limites.tMin = parseNum(s.tempMin ?? s.tMin);
@@ -286,9 +287,10 @@
                 state.limites.hMin = parseNum(s.humMin ?? s.hMin ?? s.umidMin);
                 state.limites.hMax = parseNum(s.humMax ?? s.hMax ?? s.umidMax);
             } else {
-                elements.sensorNome.textContent = sensorIDNorm;
+                elements.sensorNome.textContent = state.sensorID;
             }
 
+            // Fallback global apenas para propriedades ainda indefinidas
             const configAlertasSnap = await db.ref("config_alertas").once("value");
             if (configAlertasSnap.exists()) {
                 const cfgGlobal = configAlertasSnap.val();
@@ -319,18 +321,12 @@
             const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
             const seteDiasAtras = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
-            // Tenta buscar na rota direta ou rotas alternativas do banco
-            const idLimpo = state.sensorID.toLowerCase().replace(/[^a-z0-9]/g, "");
-            const numSensor = idLimpo.replace("sensor", "");
-
             let historicoSnap = await db.ref(`historico/${state.sensorID}`).once("value");
             
             if (!historicoSnap.exists()) {
-                historicoSnap = await db.ref(`historico/sensor${numSensor}`).once("value");
-            }
-            if (!historicoSnap.exists()) {
                 historicoSnap = await db.ref("historico/diario").once("value");
             }
+
             if (!historicoSnap.exists()) {
                 historicoSnap = await db.ref("historico").once("value");
             }
@@ -380,10 +376,8 @@
     function processarRegistro(keyOrTs, r, periodo, agora, inicioHoje, seteDiasAtras) {
         if (!r || typeof r !== "object") return;
 
-        const idRegistro = String(r.sensor || r.sensorID || r.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-        const idAlvo = String(state.sensorID || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
-        if (idRegistro && idAlvo && idRegistro !== idAlvo) return;
+        const idRegistro = r.sensor || r.sensorID || r.id;
+        if (idRegistro && idRegistro !== state.sensorID) return;
 
         const temp = Number(r.temp !== undefined ? r.temp : r.temperatura);
         const hum = Number(r.hum !== undefined ? r.hum : r.umidade);
