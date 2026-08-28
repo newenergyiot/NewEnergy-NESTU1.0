@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -93,7 +92,7 @@ class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
 
 <div
 id="modal"
-class="hidden fixed inset-0 bg-black/40 flex items-center justify-center p-4"
+class="hidden fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50"
 >
 
 <div class="bg-white rounded-2xl p-6 w-full max-w-md">
@@ -126,18 +125,13 @@ class="space-y-3"
 >
 
 
-<!-- ID -->
-
 <input
 id="id"
 required
-placeholder="SENSOR_04"
+placeholder="SENSOR_03"
 class="campo"
 >
 
-
-
-<!-- LOCAL -->
 
 <input
 id="nome"
@@ -147,9 +141,6 @@ class="campo"
 >
 
 
-
-<!-- CLIENTE -->
-
 <input
 id="cliente"
 required
@@ -157,6 +148,57 @@ placeholder="Nome do Cliente"
 class="campo"
 >
 
+
+<!-- =================================================
+     ROTAS
+================================================= -->
+
+<div>
+
+<label class="text-xs font-bold text-slate-500">
+Rota da temperatura
+</label>
+
+<input
+id="rotaTemp"
+required
+placeholder="/temp2"
+class="campo"
+>
+
+</div>
+
+
+<div>
+
+<label class="text-xs font-bold text-slate-500">
+Rota da umidade
+</label>
+
+<input
+id="rotaHum"
+required
+placeholder="/hum2"
+class="campo"
+>
+
+</div>
+
+
+<div>
+
+<label class="text-xs font-bold text-slate-500">
+Rota do último contato
+</label>
+
+<input
+id="rotaLastSeen"
+required
+placeholder="/last_seen2"
+class="campo"
+>
+
+</div>
 
 
 <button
@@ -209,6 +251,15 @@ Salvar Sensor
 
 }
 
+
+label{
+
+    display:block;
+
+    margin-bottom:4px;
+
+}
+
 </style>
 
 
@@ -246,9 +297,7 @@ const firebaseConfig = {
 };
 
 
-firebase.initializeApp(
-    firebaseConfig
-);
+firebase.initializeApp(firebaseConfig);
 
 
 const db =
@@ -265,6 +314,10 @@ let editando = false;
 let sensorEditando = null;
 
 
+// Guarda os listeners ativos
+const listeners = {};
+
+
 
 // =====================================================
 // CARREGAR SENSORES
@@ -275,9 +328,7 @@ db.ref("central_sensores").on(
     snapshot => {
 
         const container =
-            document.getElementById(
-                "sensores"
-            );
+            document.getElementById("sensores");
 
 
         container.innerHTML = "";
@@ -303,6 +354,7 @@ db.ref("central_sensores").on(
 
 
             return;
+
         }
 
 
@@ -322,6 +374,16 @@ db.ref("central_sensores").on(
 
             }
         );
+
+    },
+    error => {
+
+        console.error(error);
+
+        document.getElementById(
+            "status"
+        ).textContent =
+            "● Erro de conexão";
 
     }
 );
@@ -344,9 +406,7 @@ function criarCard(
 
 
     const card =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     card.id =
@@ -364,17 +424,18 @@ function criarCard(
             <div>
 
                 <p class="text-xs text-slate-400 font-bold">
-                    ${id}
+                    ${escapeHtml(id)}
                 </p>
 
 
                 <h2 class="text-lg font-bold text-slate-800">
-                    ${sensor.nome || "Sensor"}
+                    ${escapeHtml(sensor.nome || "Sensor")}
                 </h2>
 
 
                 <p class="text-xs text-slate-500">
-                    Cliente: ${sensor.clientID || "-"}
+                    Cliente:
+                    ${escapeHtml(sensor.clientID || "-")}
                 </p>
 
             </div>
@@ -383,16 +444,16 @@ function criarCard(
             <div class="flex gap-2">
 
                 <button
-                onclick="editar('${id}')"
-                class="bg-slate-100 px-2 py-1 rounded"
+                onclick="editar('${escapeAttr(id)}')"
+                class="bg-slate-100 px-2 py-1 rounded hover:bg-slate-200"
                 >
                     ✏️
                 </button>
 
 
                 <button
-                onclick="excluir('${id}')"
-                class="bg-slate-100 px-2 py-1 rounded"
+                onclick="excluir('${escapeAttr(id)}')"
+                class="bg-slate-100 px-2 py-1 rounded hover:bg-slate-200"
                 >
                     🗑️
                 </button>
@@ -414,7 +475,7 @@ function criarCard(
 
 
                 <strong
-                id="temp-${id}"
+                id="temp-${escapeAttr(id)}"
                 class="text-2xl text-slate-800"
                 >
                     -- °C
@@ -432,7 +493,7 @@ function criarCard(
 
 
                 <strong
-                id="hum-${id}"
+                id="hum-${escapeAttr(id)}"
                 class="text-2xl text-slate-800"
                 >
                     -- %
@@ -449,7 +510,7 @@ function criarCard(
         >
 
             <span
-            id="online-${id}"
+            id="online-${escapeAttr(id)}"
             class="text-sm text-slate-500"
             >
                 ● Offline
@@ -457,7 +518,7 @@ function criarCard(
 
 
             <span
-            id="seen-${id}"
+            id="seen-${escapeAttr(id)}"
             class="text-xs text-slate-500"
             >
                 --
@@ -467,13 +528,9 @@ function criarCard(
 
 
 
-        <!-- =================================================
-             CORRIGIDO:
-             Agora abre historico.html
-        ================================================== -->
-
         <a
-        href="historico.html?id=${encodeURIComponent(id)}"
+        href="painel.html?id=${encodeURIComponent(id)}"
+        target="_blank"
         class="block text-center bg-blue-50 text-blue-600 font-bold rounded-xl py-3 mt-4 hover:bg-blue-100"
         >
             Ver Painel Detalhado
@@ -482,9 +539,7 @@ function criarCard(
     `;
 
 
-    container.appendChild(
-        card
-    );
+    container.appendChild(card);
 
 
 
@@ -494,17 +549,9 @@ function criarCard(
 
     if (sensor.rotaTemp) {
 
-        db.ref(
-            sensor.rotaTemp
-        ).on(
-            "value",
-            snap => {
-
-                const valor =
-                    Number(
-                        snap.val()
-                    );
-
+        ouvirRota(
+            sensor.rotaTemp,
+            valor => {
 
                 const elemento =
                     document.getElementById(
@@ -514,7 +561,7 @@ function criarCard(
 
                 if (
                     elemento &&
-                    !isNaN(valor)
+                    Number.isFinite(valor)
                 ) {
 
                     elemento.textContent =
@@ -536,17 +583,9 @@ function criarCard(
 
     if (sensor.rotaHum) {
 
-        db.ref(
-            sensor.rotaHum
-        ).on(
-            "value",
-            snap => {
-
-                const valor =
-                    Number(
-                        snap.val()
-                    );
-
+        ouvirRota(
+            sensor.rotaHum,
+            valor => {
 
                 const elemento =
                     document.getElementById(
@@ -556,7 +595,7 @@ function criarCard(
 
                 if (
                     elemento &&
-                    !isNaN(valor)
+                    Number.isFinite(valor)
                 ) {
 
                     elemento.textContent =
@@ -578,21 +617,91 @@ function criarCard(
 
     if (sensor.rotaLastSeen) {
 
-        db.ref(
-            sensor.rotaLastSeen
-        ).on(
-            "value",
-            snap => {
+        ouvirRota(
+            sensor.rotaLastSeen,
+            valor => {
 
                 atualizarOnline(
                     id,
-                    snap.val()
+                    valor
                 );
 
             }
         );
 
     }
+
+}
+
+
+
+// =====================================================
+// OUVIR ROTA
+// =====================================================
+
+function ouvirRota(
+    rota,
+    callback
+){
+
+    if (!rota)
+        return;
+
+
+    const ref =
+        db.ref(
+            normalizarRota(rota)
+        );
+
+
+    ref.on(
+        "value",
+        snapshot => {
+
+            const valor =
+                Number(
+                    snapshot.val()
+                );
+
+
+            callback(valor);
+
+        }
+    );
+
+
+    listeners[rota] =
+        ref;
+
+}
+
+
+
+// =====================================================
+// NORMALIZAR ROTA
+// =====================================================
+
+function normalizarRota(rota){
+
+    if (!rota)
+        return "";
+
+
+    rota =
+        String(rota).trim();
+
+
+    if (
+        rota.startsWith("/")
+    ) {
+
+        rota =
+            rota.substring(1);
+
+    }
+
+
+    return rota;
 
 }
 
@@ -607,18 +716,40 @@ function atualizarOnline(
     timestamp
 ){
 
-    if (!timestamp)
+    if (
+        !Number.isFinite(
+            Number(timestamp)
+        )
+    )
         return;
+
+
+    let ts =
+        Number(timestamp);
+
+
+    // Se estiver em milissegundos
+    if (
+        ts > 100000000000
+    ) {
+
+        ts =
+            Math.floor(
+                ts / 1000
+            );
+
+    }
 
 
     const segundos =
         Math.floor(
             Date.now() / 1000
         ) -
-        Number(timestamp);
+        ts;
 
 
     const online =
+        segundos >= 0 &&
         segundos < 60;
 
 
@@ -662,7 +793,7 @@ function atualizarOnline(
 
         hora.textContent =
             new Date(
-                Number(timestamp) * 1000
+                ts * 1000
             ).toLocaleTimeString(
                 "pt-BR"
             );
@@ -700,11 +831,103 @@ function abrirModal(){
     ).disabled = false;
 
 
+    // Para novos sensores,
+    // sugerimos automaticamente as rotas
+    // conforme o número informado.
+
+    document.getElementById(
+        "id"
+    ).oninput =
+        sugerirRotas;
+
+
     document.getElementById(
         "modal"
     ).classList.remove(
         "hidden"
     );
+
+}
+
+
+
+// =====================================================
+// SUGERIR ROTAS
+// =====================================================
+
+function sugerirRotas(){
+
+    if (editando)
+        return;
+
+
+    const valor =
+        document.getElementById(
+            "id"
+        )
+        .value
+        .trim()
+        .toUpperCase();
+
+
+    const resultado =
+        valor.match(
+            /^SENSOR_(\d+)$/
+        );
+
+
+    if (!resultado)
+        return;
+
+
+    const numero =
+        Number(
+            resultado[1]
+        );
+
+
+    if (
+        numero === 1
+    ) {
+
+        document.getElementById(
+            "rotaTemp"
+        ).value =
+            "/temp";
+
+
+        document.getElementById(
+            "rotaHum"
+        ).value =
+            "/hum";
+
+
+        document.getElementById(
+            "rotaLastSeen"
+        ).value =
+            "/last_seen";
+
+    }
+    else {
+
+        document.getElementById(
+            "rotaTemp"
+        ).value =
+            `/temp${numero}`;
+
+
+        document.getElementById(
+            "rotaHum"
+        ).value =
+            `/hum${numero}`;
+
+
+        document.getElementById(
+            "rotaLastSeen"
+        ).value =
+            `/last_seen${numero}`;
+
+    }
 
 }
 
@@ -739,6 +962,17 @@ function editar(id){
     .then(
         snapshot => {
 
+            if (!snapshot.exists()) {
+
+                alert(
+                    "Sensor não encontrado."
+                );
+
+                return;
+
+            }
+
+
             const s =
                 snapshot.val();
 
@@ -754,14 +988,23 @@ function editar(id){
                 "Editar " + id;
 
 
-            document.getElementById(
-                "id"
-            ).value = id;
+            const campoId =
+                document.getElementById(
+                    "id"
+                );
 
 
-            document.getElementById(
-                "id"
-            ).disabled = true;
+            campoId.value =
+                id;
+
+
+            campoId.disabled =
+                true;
+
+
+            // Desliga sugestão automática
+            campoId.oninput =
+                null;
 
 
             document.getElementById(
@@ -776,10 +1019,44 @@ function editar(id){
                 s.clientID || "";
 
 
+            // =================================================
+            // IMPORTANTE:
+            // PRESERVA AS ROTAS QUE JÁ EXISTEM NO FIREBASE
+            // =================================================
+
+            document.getElementById(
+                "rotaTemp"
+            ).value =
+                s.rotaTemp || "";
+
+
+            document.getElementById(
+                "rotaHum"
+            ).value =
+                s.rotaHum || "";
+
+
+            document.getElementById(
+                "rotaLastSeen"
+            ).value =
+                s.rotaLastSeen || "";
+
+
             document.getElementById(
                 "modal"
             ).classList.remove(
                 "hidden"
+            );
+
+        }
+    )
+    .catch(
+        error => {
+
+            console.error(error);
+
+            alert(
+                "Erro ao carregar sensor."
             );
 
         }
@@ -820,7 +1097,7 @@ function salvar(event){
     if (!resultado) {
 
         alert(
-            "Use o formato SENSOR_02, SENSOR_03, SENSOR_04..."
+            "Use o formato SENSOR_01, SENSOR_02, SENSOR_03..."
         );
 
         return;
@@ -848,54 +1125,106 @@ function salvar(event){
     }
 
 
+    const nome =
+        document.getElementById(
+            "nome"
+        )
+        .value
+        .trim();
+
+
+    const cliente =
+        document.getElementById(
+            "cliente"
+        )
+        .value
+        .trim();
+
+
+    const rotaTemp =
+        document.getElementById(
+            "rotaTemp"
+        )
+        .value
+        .trim();
+
+
+    const rotaHum =
+        document.getElementById(
+            "rotaHum"
+        )
+        .value
+        .trim();
+
+
+    const rotaLastSeen =
+        document.getElementById(
+            "rotaLastSeen"
+        )
+        .value
+        .trim();
+
+
+    if (
+        !rotaTemp ||
+        !rotaHum ||
+        !rotaLastSeen
+    ) {
+
+        alert(
+            "Informe todas as rotas do sensor."
+        );
+
+        return;
+
+    }
+
 
     // =================================================
-    // ROTAS AUTOMÁTICAS
+    // DADOS
     // =================================================
 
     const dados = {
 
         nome:
-            document.getElementById(
-                "nome"
-            )
-            .value
-            .trim(),
+            nome,
 
 
         clientID:
-            document.getElementById(
-                "cliente"
-            )
-            .value
-            .trim(),
+            cliente,
 
 
         rotaTemp:
-            `/temp${numero}`,
+            rotaTemp,
 
 
         rotaHum:
-            `/hum${numero}`,
+            rotaHum,
 
 
         rotaLastSeen:
-            `/${numero}`
+            rotaLastSeen
 
     };
 
 
-    db.ref(
-        `central_sensores/${id}`
-    )
+    const referencia =
+        db.ref(
+            `central_sensores/${id}`
+        );
+
+
+    referencia
     .set(dados)
     .then(
         () => {
 
             alert(
                 editando
-                ? "Sensor atualizado!"
-                : "Sensor cadastrado!"
+                ?
+                "Sensor atualizado!"
+                :
+                "Sensor cadastrado!"
             );
 
 
@@ -966,8 +1295,81 @@ function excluir(id){
 
 }
 
+
+
+// =====================================================
+// ESCAPE HTML
+// =====================================================
+
+function escapeHtml(valor){
+
+    return String(valor)
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+
+// =====================================================
+// ESCAPE PARA ATRIBUTO
+// =====================================================
+
+function escapeAttr(valor){
+
+    return String(valor)
+        .replace(
+            /\\/g,
+            "\\\\"
+        )
+        .replace(
+            /'/g,
+            "\\'"
+        );
+
+}
+
+
+
+// =====================================================
+// ESCUTAR ENTER / ESC NO MODAL
+// =====================================================
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key === "Escape"
+        ) {
+
+            fecharModal();
+
+        }
+
+    }
+);
+
 </script>
 
 </body>
+
 </html>
-```
