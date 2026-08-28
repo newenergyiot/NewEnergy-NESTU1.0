@@ -195,9 +195,6 @@
 </div>
 
 <script>
-    /**
-     * Configurações e Estado Global da Aplicação
-     */
     const FIREBASE_CONFIG = {
         apiKey: "AIzaSyAHF7mVM9Yv71cnqG-C1_P7MfEj1hc6_Bs",
         authDomain: "nestu-02.firebaseapp.com",
@@ -213,7 +210,7 @@
         sensorConfig: null,
         globalData: [],
         chartInstance: null,
-        limites: { tMin: null, tMax: null, hMin: null, hMax: null }
+        limites: { tMin: undefined, tMax: undefined, hMin: undefined, hMax: undefined }
     };
 
     if (!firebase.apps.length) {
@@ -269,6 +266,9 @@
 
     async function carregarSensor() {
         try {
+            // Reseta limites para undefined a cada recarga
+            state.limites = { tMin: undefined, tMax: undefined, hMin: undefined, hMax: undefined };
+
             const sensorSnap = await db.ref(`central_sensores/${state.sensorID}`).once("value");
             
             if (sensorSnap.exists()) {
@@ -277,31 +277,27 @@
                 elements.sensorLocal.textContent = state.sensorConfig.nome || state.sensorConfig.local || "--";
                 elements.sensorCliente.textContent = state.sensorConfig.clientID || state.sensorConfig.cliente || "--";
 
-                // Extrai limites específicos do sensor
                 const s = state.sensorConfig;
-                if (s.tempMin !== undefined && s.tempMin !== null) state.limites.tMin = Number(s.tempMin);
-                else if (s.tMin !== undefined && s.tMin !== null) state.limites.tMin = Number(s.tMin);
 
-                if (s.tempMax !== undefined && s.tempMax !== null) state.limites.tMax = Number(s.tempMax);
-                else if (s.tMax !== undefined && s.tMax !== null) state.limites.tMax = Number(s.tMax);
+                // Lê as variações de chaves possíveis no Firebase
+                const parseNum = (val) => (val !== undefined && val !== null && val !== "") ? Number(val) : undefined;
 
-                if (s.humMin !== undefined && s.humMin !== null) state.limites.hMin = Number(s.humMin);
-                else if (s.hMin !== undefined && s.hMin !== null) state.limites.hMin = Number(s.hMin);
-
-                if (s.humMax !== undefined && s.humMax !== null) state.limites.hMax = Number(s.humMax);
-                else if (s.hMax !== undefined && s.hMax !== null) state.limites.hMax = Number(s.hMax);
+                state.limites.tMin = parseNum(s.tempMin ?? s.tMin);
+                state.limites.tMax = parseNum(s.tempMax ?? s.tMax);
+                state.limites.hMin = parseNum(s.humMin ?? s.hMin ?? s.umidMin);
+                state.limites.hMax = parseNum(s.humMax ?? s.hMax ?? s.umidMax);
             } else {
                 elements.sensorNome.textContent = state.sensorID;
             }
 
-            // Fallback: se o sensor não possuir limites cadastrados, usa o config_alertas
+            // Fallback global apenas para propriedades ainda indefinidas
             const configAlertasSnap = await db.ref("config_alertas").once("value");
             if (configAlertasSnap.exists()) {
                 const cfgGlobal = configAlertasSnap.val();
-                if (state.limites.tMin === null && cfgGlobal.tMin !== undefined) state.limites.tMin = Number(cfgGlobal.tMin);
-                if (state.limites.tMax === null && cfgGlobal.tMax !== undefined) state.limites.tMax = Number(cfgGlobal.tMax);
-                if (state.limites.hMin === null && cfgGlobal.hMin !== undefined) state.limites.hMin = Number(cfgGlobal.hMin);
-                if (state.limites.hMax === null && cfgGlobal.hMax !== undefined) state.limites.hMax = Number(cfgGlobal.hMax);
+                if (state.limites.tMin === undefined && cfgGlobal.tMin !== undefined) state.limites.tMin = Number(cfgGlobal.tMin);
+                if (state.limites.tMax === undefined && cfgGlobal.tMax !== undefined) state.limites.tMax = Number(cfgGlobal.tMax);
+                if (state.limites.hMin === undefined && cfgGlobal.hMin !== undefined) state.limites.hMin = Number(cfgGlobal.hMin);
+                if (state.limites.hMax === undefined && cfgGlobal.hMax !== undefined) state.limites.hMax = Number(cfgGlobal.hMax);
             }
 
             fetchData("diario");
@@ -325,15 +321,12 @@
             const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
             const seteDiasAtras = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
-            // 1. Tenta buscar primeiramente na estrutura específica do Sensor: historico/{sensorID}
             let historicoSnap = await db.ref(`historico/${state.sensorID}`).once("value");
             
-            // 2. Fallback: busca na estrutura agrupada historico/diario
             if (!historicoSnap.exists()) {
                 historicoSnap = await db.ref("historico/diario").once("value");
             }
 
-            // 3. Fallback adicional: busca no nó raiz de historico
             if (!historicoSnap.exists()) {
                 historicoSnap = await db.ref("historico").once("value");
             }
@@ -364,7 +357,6 @@
 
             varrerEProcessar(base);
 
-            // Remover duplicados e ordenar por data decrescente
             const mapaUnico = new Map();
             state.globalData.forEach(item => mapaUnico.set(`${item.ts}_${item.temp}_${item.hum}`, item));
             state.globalData = [...mapaUnico.values()].sort((a, b) => b.ts - a.ts);
@@ -417,10 +409,10 @@
     }
 
     function checarErro(temp, hum) {
-        const erroTemp = (state.limites.tMax !== null && temp > state.limites.tMax) || 
-                         (state.limites.tMin !== null && temp < state.limites.tMin);
-        const erroHum = (state.limites.hMax !== null && hum > state.limites.hMax) || 
-                        (state.limites.hMin !== null && hum < state.limites.hMin);
+        const erroTemp = (state.limites.tMax !== undefined && temp > state.limites.tMax) || 
+                         (state.limites.tMin !== undefined && temp < state.limites.tMin);
+        const erroHum = (state.limites.hMax !== undefined && hum > state.limites.hMax) || 
+                        (state.limites.hMin !== undefined && hum < state.limites.hMin);
         return { erroTemp, erroHum, temErro: erroTemp || erroHum };
     }
 
@@ -454,7 +446,7 @@
                     </div>
                     <div>
                         <small>STATUS</small><br>
-                        <span class="${temErro ? "valor-critico" : "normal"}">${temErro ? "ALERTA" : "OK"}</span>
+                        <span class="${temErro ? "valor-critico" : "normal"}">${temErro ? "ALERTA" : "NORMAL"}</span>
                     </div>
                 </div>
             `;
