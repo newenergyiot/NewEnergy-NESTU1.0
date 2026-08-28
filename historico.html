@@ -1,1 +1,705 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NewEnergy | Histórico</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"><style>:root{--brand-primary:#1a365d;--brand-accent:#007aff;--bg-body:#f8fafc;--card-bg:#fff;--text-main:#1e293b;--text-muted:#64748b;--border:#e2e8f0;--danger:#e11d48;--success:#10b981;--shadow:0 10px 15px -3px rgba(0,0,0,.1)}*{box-sizing:border-box}body{margin:0;font-family:Inter,sans-serif;background:var(--bg-body);color:var(--text-main);display:flex;justify-content:center;padding:20px}.card{background:#fff;border-radius:16px;padding:30px;width:100%;max-width:1100px;border:1px solid var(--border);box-shadow:var(--shadow)}header{border-left:6px solid var(--brand-primary);padding-left:20px;margin-bottom:25px}header h1{margin:0;font-size:26px;font-weight:800;color:var(--brand-primary)}header p{margin:4px 0 0;color:var(--brand-accent);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px}.info-bar{display:flex;justify-content:space-between;align-items:center;gap:15px;background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;flex-wrap:wrap}.sensor-info{font-size:13px;color:var(--text-muted)}.sensor-info strong{color:var(--brand-primary)}.tabs{display:flex;background:#f1f5f9;padding:4px;border-radius:12px;margin-bottom:25px;gap:4px;flex-wrap:wrap}.tab{flex:1;min-width:100px;padding:12px;text-align:center;border-radius:9px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-muted)}.tab.active{background:#fff;color:var(--brand-primary);box-shadow:0 4px 6px -1px rgba(0,0,0,.05)}.chart-container{background:#fff;border-radius:12px;padding:15px;margin-bottom:30px;border:1px solid var(--border);height:380px}#lista{max-height:500px;overflow-y:auto;padding-right:10px}.data-divider{color:var(--brand-primary);font-size:11px;font-weight:800;margin:25px 0 12px;display:flex;align-items:center}.data-divider:after{content:"";flex:1;height:1px;background:var(--border);margin-left:15px}.item{background:#fff;padding:14px 18px;border-radius:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border)}.item.alerta{border-left:4px solid var(--danger);background:#fff1f2}.btn-group{display:flex;gap:15px;margin-top:30px}.btn{flex:1;padding:16px;border:0;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px}.btn-pdf{background:var(--brand-primary);color:#fff}.btn-pdf:disabled{background:#94a3b8;cursor:not-allowed}.btn-back{background:#fff;color:var(--text-muted);border:1.5px solid var(--border)}.valor-critico{color:var(--danger)!important;font-weight:900}.normal{color:var(--success);font-weight:800}.erro{background:#fff1f2;border:1px solid #fecdd3;color:#be123c;padding:15px;border-radius:10px;margin-bottom:20px;font-size:13px}.aviso{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;padding:15px;border-radius:10px;margin-bottom:20px;font-size:13px}@media(max-width:700px){.card{padding:18px}.chart-container{height:300px}.btn-group{flex-direction:column}.item{gap:10px;flex-direction:column;align-items:flex-start}}</style><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script></head><body><div class="card"><header><h1>NEWENERGY</h1><p>Sistema de Monitoramento</p></header><div class="info-bar"><div class="sensor-info">Sensor: <strong id="sensorNome">Carregando...</strong></div><div class="sensor-info">Local: <strong id="sensorLocal">--</strong></div><div class="sensor-info">Cliente: <strong id="sensorCliente">--</strong></div></div><div id="erroFirebase"></div><div class="aviso">Histórico carregado a partir de <b>historico/diario</b>.</div><div class="tabs"><div class="tab active" data-periodo="diario">Hoje</div><div class="tab" data-periodo="semanal">Últimos 7 Dias</div><div class="tab" data-periodo="mensal">Mês Atual</div><div class="tab" data-periodo="anual">Ano Atual</div></div><div class="chart-container"><canvas id="mainChart"></canvas></div><div id="lista"><p style="text-align:center;padding:40px">Carregando histórico...</p></div><div class="btn-group"><button class="btn btn-pdf" id="btnPdf" onclick="exportarPDF()">Exportar Relatório Profissional</button><button class="btn btn-back" onclick="voltar()">Voltar</button></div></div><script>const firebaseConfig={apiKey:"AIzaSyAHF7mVM9Yv71cnqG-C1_P7MfEj1hc6_Bs",authDomain:"nestu-02.firebaseapp.com",databaseURL:"https://nestu-02-default-rtdb.firebaseio.com",projectId:"nestu-02",storageBucket:"nestu-02.firebasestorage.app",messagingSenderId:"440418278168",appId:"1:440418278168:web:15c519eb00200a33435c6d"};firebase.initializeApp(firebaseConfig);const db=firebase.database();let myChart=null,globalData=[],sensorID=new URLSearchParams(location.search).get("id"),sensorConfig=null,limites={tMin:18,tMax:24.5,hMin:45,hMax:65};if(!sensorID){sensorNome.textContent="Nenhum sensor selecionado";lista.innerHTML='<div class="erro">Nenhum sensor foi informado.<br><br>Abra o histórico através do painel de um sensor.</div>'}else carregarSensor();async function carregarSensor(){try{let s=await db.ref(`central_sensores/${sensorID}`).once("value");if(!s.exists())throw Error(`O sensor ${sensorID} não existe em central_sensores.`);sensorConfig=s.val();sensorNome.textContent=sensorID;sensorLocal.textContent=sensorConfig.nome||"--";sensorCliente.textContent=sensorConfig.clientID||"--";let l=await db.ref("config_alertas").once("value");if(l.exists()){let x=l.val();["tMin","tMax","hMin","hMax"].forEach(k=>{if(x[k]!==undefined)limites[k]=Number(x[k])})}fetchData("diario")}catch(e){erroFirebase.innerHTML=`<div class="erro"><b>Erro ao carregar o sensor.</b><br><br>${escapeHtml(e.message)}</div>`}}async function fetchData(periodo){lista.innerHTML='<p style="text-align:center;padding:40px">Sincronizando dados...</p>';globalData=[];if(myChart){myChart.destroy();myChart=null}try{let s=await db.ref("historico/diario").once("value");if(!s.exists())return mostrarSemDados();let base=s.val(),agora=new Date(),inicioHoje=new Date(agora.getFullYear(),agora.getMonth(),agora.getDate()).getTime(),seteDiasAtras=Date.now()-6048e5;Object.keys(base).forEach(dataKey=>{let dia=base[dataKey];if(!dia||typeof dia!=="object")return;Object.keys(dia).forEach(ts=>processarRegistro(ts,dia[ts],dataKey,periodo,agora,inicioHoje,seteDiasAtras))});let mapa=new Map;globalData.forEach(x=>mapa.set(`${x.ts}_${x.temp}_${x.hum}`,x));globalData=[...mapa.values()].sort((a,b)=>b.ts-a.ts);if(!globalData.length)return mostrarSemDados();renderUI();renderChart(periodo)}catch(e){console.error(e);lista.innerHTML=`<div class="erro"><b>Erro ao carregar histórico.</b><br><br>${escapeHtml(e.message)}</div>`}}function processarRegistro(ts,r,dataKey,periodo,agora,inicioHoje,seteDiasAtras){if(!r||typeof r!=="object")return;let temp=Number(r.temp),hum=Number(r.hum),timestamp=Number(ts);if(!Number.isFinite(temp)||!Number.isFinite(hum)||!Number.isFinite(timestamp))return;if(timestamp>1e11)timestamp=Math.floor(timestamp/1e3);let data=new Date(timestamp*1e3);if(isNaN(data.getTime()))return;let incluir=periodo==="diario"&&timestamp*1e3>=inicioHoje||periodo==="semanal"&&timestamp*1e3>=seteDiasAtras||periodo==="mensal"&&data.getMonth()===agora.getMonth()&&data.getFullYear()===agora.getFullYear()||periodo==="anual"&&data.getFullYear()===agora.getFullYear();if(!incluir)return;globalData.push({ts:timestamp,temp,hum,data:data.toLocaleDateString("pt-BR"),hora:data.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})})}function mostrarSemDados(){lista.innerHTML='<p style="text-align:center;padding:40px">Nenhum registro encontrado para este período.</p>'}function renderUI(){lista.innerHTML="";let ultima="";globalData.forEach(d=>{if(d.data!==ultima){let div=document.createElement("div");div.className="data-divider";div.innerHTML=`<span>${d.data}</span>`;lista.appendChild(div);ultima=d.data}let et=d.temp>limites.tMax||d.temp<limites.tMin,eh=d.hum>limites.hMax||d.hum<limites.hMin,erro=et||eh,item=document.createElement("div");item.className=`item ${erro?"alerta":""}`;item.innerHTML=`<div><b>${d.hora}</b></div><div style="display:flex;gap:20px;text-align:right"><div><small>TEMP</small><br><span class="${et?"valor-critico":""}">${d.temp.toFixed(1)}°C</span></div><div><small>UMID</small><br><span class="${eh?"valor-critico":""}">${d.hum.toFixed(1)}%</span></div><div><small>STATUS</small><br><span class="${erro?"valor-critico":"normal"}">${erro?"ALERTA":"NORMAL"}</span></div></div>`;lista.appendChild(item)})}function renderChart(periodo){let dados=[...globalData].sort((a,b)=>a.ts-b.ts),ctx=document.getElementById("mainChart").getContext("2d"),gradT=ctx.createLinearGradient(0,0,0,400),gradH=ctx.createLinearGradient(0,0,0,400);gradT.addColorStop(0,"rgba(244,63,94,.2)");gradT.addColorStop(1,"rgba(244,63,94,0)");gradH.addColorStop(0,"rgba(0,122,255,.2)");gradH.addColorStop(1,"rgba(0,122,255,0)");myChart=new Chart(ctx,{type:"line",data:{labels:dados.map(d=>periodo==="diario"||periodo==="semanal"?`${d.data.split("/")[0]}/${d.data.split("/")[1]} ${d.hora}`:d.data),datasets:[{label:"Temperatura (°C)",data:dados.map(d=>d.temp),borderColor:"#f43f5e",backgroundColor:gradT,fill:true,tension:.4,pointRadius:dados.length>50?0:2,borderWidth:2},{label:"Umidade (%)",data:dados.map(d=>d.hum),borderColor:"#007aff",backgroundColor:gradH,fill:true,tension:.4,pointRadius:dados.length>50?0:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{labels:{font:{family:"Inter",weight:"bold"}}}},scales:{x:{ticks:{autoSkip:true,maxTicksLimit:12}},y:{grid:{color:"#f1f5f9"}}}}})}async function exportarPDF(){if(!globalData.length)return alert("Não existem dados para exportar.");const{jsPDF}=window.jspdf,doc=new jsPDF(),btn=btnPdf,aba=document.querySelector(".tab.active").innerText,original=btn.innerText;btn.disabled=true;let linhas=28,total=Math.max(1,Math.ceil(globalData.length/linhas));function header(p){doc.setFillColor(26,54,93);doc.rect(0,0,210,38,"F");doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(22);doc.text("NEWENERGY",15,16);doc.setFontSize(9);doc.setFont("helvetica","normal");doc.text("SISTEMA DE MONITORAMENTO",15,23);doc.setFontSize(8);doc.text(`SENSOR: ${sensorID}`,15,29);doc.text(`RELATÓRIO: ${aba.toUpperCase()}`,195,15,{align:"right"});doc.text(`DATA: ${new Date().toLocaleDateString("pt-BR")}`,195,21,{align:"right"});doc.text(`PÁGINA: ${p} / ${total}`,195,27,{align:"right"});doc.setFillColor(0,122,255);doc.rect(0,38,210,1.2,"F")}function tableHead(y){doc.setFillColor(245,248,251);doc.rect(15,y-6,180,10,"F");doc.setDrawColor(200,210,220);doc.line(15,y+4,195,y+4);doc.setTextColor(26,54,93);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text("DATA / HORA",20,y);doc.text("TEMPERATURA",78,y);doc.text("UMIDADE",128,y);doc.text("STATUS",172,y);return y+10}let pagina=1;header(1);let y=tableHead(55);for(let i=0;i<globalData.length;i++){let d=globalData[i];if(y>280){doc.addPage();header(++pagina);y=tableHead(55)}let erro=d.temp>limites.tMax||d.temp<limites.tMin||d.hum>limites.hMax||d.hum<limites.hMin;if(erro){doc.setFillColor(255,241,242);doc.rect(15,y-5,180,8,"F");doc.setTextColor(225,29,72);doc.setFont("helvetica","bold")}else{doc.setTextColor(51,65,85);doc.setFont("helvetica","normal")}doc.setFontSize(8);doc.text(`${d.data} ${d.hora}`,20,y);doc.text(`${d.temp.toFixed(1)}°C`,83,y);doc.text(`${d.hum.toFixed(1)}%`,133,y);doc.setTextColor(...(erro?[225,29,72]:[16,185,129]));doc.text(erro?"ALERTA":"NORMAL",172,y);y+=8;if(i%20===0){btn.innerText=`Gerando... ${Math.round(i/globalData.length*100)}%`;await new Promise(r=>setTimeout(r,1))}}doc.setFontSize(7);doc.setTextColor(148,163,184);doc.text("NewEnergy Analytics - Monitoramento de Precisão",105,292,{align:"center"});doc.save(`Relatorio_NewEnergy_${sensorID}_${aba.replace(/ /g,"_")}.pdf`);btn.disabled=false;btn.innerText=original}function voltar(){location.href=`painel.html?id=${encodeURIComponent(sensorID||"")}`}document.querySelectorAll(".tab").forEach(tab=>tab.addEventListener("click",function(){document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));this.classList.add("active");fetchData(this.dataset.periodo)}));function escapeHtml(v){return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}</script></body></html>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewEnergy | Histórico</title>
+
+    <!-- Fontes e Estilos de Bibliotecas Externas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Dependências SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --brand-primary: #1a365d;
+            --brand-accent: #007aff;
+            --bg-body: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #e11d48;
+            --danger-bg: #fff1f2;
+            --danger-border: #fecdd3;
+            --danger-text: #be123c;
+            --success: #10b981;
+            --info-bg: #eff6ff;
+            --info-border: #bfdbfe;
+            --info-text: #1d4ed8;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px;
+            width: 100%;
+            max-width: 1100px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        header {
+            border-left: 6px solid var(--brand-primary);
+            padding-left: 20px;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--brand-primary);
+        }
+
+        header p {
+            margin: 4px 0 0;
+            color: var(--brand-accent);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .sensor-info {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .sensor-info strong {
+            color: var(--brand-primary);
+        }
+
+        .tabs {
+            display: flex;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px;
+            text-align: center;
+            border-radius: 9px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            border: none;
+            background: transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab.active {
+            background: #ffffff;
+            color: var(--brand-primary);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+            height: 380px;
+        }
+
+        #lista-historico {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .data-divider {
+            color: var(--brand-primary);
+            font-size: 11px;
+            font-weight: 800;
+            margin: 25px 0 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .data-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+            margin-left: 15px;
+        }
+
+        .item {
+            background: var(--card-bg);
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+
+        .item.alerta {
+            border-left: 4px solid var(--danger);
+            background: var(--danger-bg);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px;
+            border: 0;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+
+        .btn-pdf {
+            background: var(--brand-primary);
+            color: #ffffff;
+        }
+
+        .btn-pdf:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .btn-back {
+            background: var(--card-bg);
+            color: var(--text-muted);
+            border: 1.5px solid var(--border);
+        }
+
+        .valor-critico {
+            color: var(--danger) !important;
+            font-weight: 900;
+        }
+
+        .normal {
+            color: var(--success);
+            font-weight: 800;
+        }
+
+        .erro {
+            background: var(--danger-bg);
+            border: 1px solid var(--danger-border);
+            color: var(--danger-text);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .aviso {
+            background: var(--info-bg);
+            border: 1px solid var(--info-border);
+            color: var(--info-text);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 700px) {
+            .card {
+                padding: 18px;
+            }
+            .chart-container {
+                height: 300px;
+            }
+            .btn-group {
+                flex-direction: column;
+            }
+            .item {
+                gap: 10px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <header>
+            <h1>NEWENERGY</h1>
+            <p>Sistema de Monitoramento</p>
+        </header>
+
+        <div class="info-bar">
+            <div class="sensor-info">Sensor: <strong id="sensorNome">Carregando...</strong></div>
+            <div class="sensor-info">Local: <strong id="sensorLocal">--</strong></div>
+            <div class="sensor-info">Cliente: <strong id="sensorCliente">--</strong></div>
+        </div>
+
+        <div id="erroFirebase"></div>
+        <div class="aviso">Histórico carregado a partir de <b>historico/diario</b>.</div>
+
+        <div class="tabs" id="tabsGroup">
+            <button class="tab active" data-periodo="diario">Hoje</button>
+            <button class="tab" data-periodo="semanal">Últimos 7 Dias</button>
+            <button class="tab" data-periodo="mensal">Mês Atual</button>
+            <button class="tab" data-periodo="anual">Ano Atual</button>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+        </div>
+
+        <div id="lista-historico">
+            <p style="text-align: center; padding: 40px;">Carregando histórico...</p>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-pdf" id="btnPdf">Exportar Relatório Profissional</button>
+            <button class="btn btn-back" id="btnVoltar">Voltar</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Configurações e Estado Global da Aplicação
+         */
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyAHF7mVM9Yv71cnqG-C1_P7MfEj1hc6_Bs",
+            authDomain: "nestu-02.firebaseapp.com",
+            databaseURL: "https://nestu-02-default-rtdb.firebaseio.com",
+            projectId: "nestu-02",
+            storageBucket: "nestu-02.firebasestorage.app",
+            messagingSenderId: "440418278168",
+            appId: "1:440418278168:web:15c519eb00200a33435c6d"
+        };
+
+        const state = {
+            sensorID: new URLSearchParams(window.location.search).get("id"),
+            sensorConfig: null,
+            globalData: [],
+            chartInstance: null,
+            limites: { tMin: 18, tMax: 24.5, hMin: 45, hMax: 65 }
+        };
+
+        // Inicialização do Firebase
+        firebase.initializeApp(FIREBASE_CONFIG);
+        const db = firebase.database();
+
+        // Referências do DOM
+        const elements = {
+            sensorNome: document.getElementById("sensorNome"),
+            sensorLocal: document.getElementById("sensorLocal"),
+            sensorCliente: document.getElementById("sensorCliente"),
+            erroFirebase: document.getElementById("erroFirebase"),
+            listaHistorico: document.getElementById("lista-historico"),
+            btnPdf: document.getElementById("btnPdf"),
+            btnVoltar: document.getElementById("btnVoltar"),
+            tabsGroup: document.getElementById("tabsGroup"),
+            chartCtx: document.getElementById("mainChart").getContext("2d")
+        };
+
+        /**
+         * Inicialização e Bind de Eventos
+         */
+        document.addEventListener("DOMContentLoaded", () => {
+            setupEventListeners();
+            
+            if (!state.sensorID) {
+                elements.sensorNome.textContent = "Nenhum sensor selecionado";
+                elements.listaHistorico.innerHTML = `
+                    <div class="erro">Nenhum sensor foi informado.<br><br>Abra o histórico através do painel de um sensor.</div>
+                `;
+                return;
+            }
+
+            carregarSensor();
+        });
+
+        function setupEventListeners() {
+            elements.btnVoltar.addEventListener("click", voltarPainel);
+            elements.btnPdf.addEventListener("click", exportarPDF);
+
+            elements.tabsGroup.addEventListener("click", (e) => {
+                const target = e.target;
+                if (!target.classList.contains("tab")) return;
+
+                document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+                target.classList.add("active");
+
+                const periodo = target.getAttribute("data-periodo");
+                fetchData(periodo);
+            });
+        }
+
+        /**
+         * Funções Principais de Dados (Firebase)
+         */
+        async function carregarSensor() {
+            try {
+                const sensorSnap = await db.ref(`central_sensores/${state.sensorID}`).once("value");
+                if (!sensorSnap.exists()) {
+                    throw new Error(`O sensor ${state.sensorID} não existe em central_sensores.`);
+                }
+
+                state.sensorConfig = sensorSnap.val();
+                elements.sensorNome.textContent = state.sensorID;
+                elements.sensorLocal.textContent = state.sensorConfig.nome || "--";
+                elements.sensorCliente.textContent = state.sensorConfig.clientID || "--";
+
+                const configAlertasSnap = await db.ref("config_alertas").once("value");
+                if (configAlertasSnap.exists()) {
+                    const cfg = configAlertasSnap.val();
+                    ["tMin", "tMax", "hMin", "hMax"].forEach(k => {
+                        if (cfg[k] !== undefined) state.limites[k] = Number(cfg[k]);
+                    });
+                }
+
+                fetchData("diario");
+            } catch (error) {
+                elements.erroFirebase.innerHTML = `
+                    <div class="erro"><b>Erro ao carregar o sensor.</b><br><br>${escapeHtml(error.message)}</div>
+                `;
+            }
+        }
+
+        async function fetchData(periodo) {
+            elements.listaHistorico.innerHTML = '<p style="text-align:center;padding:40px">Sincronizando dados...</p>';
+            state.globalData = [];
+
+            if (state.chartInstance) {
+                state.chartInstance.destroy();
+                state.chartInstance = null;
+            }
+
+            try {
+                const historicoSnap = await db.ref("historico/diario").once("value");
+                if (!historicoSnap.exists()) return mostrarSemDados();
+
+                const base = historicoSnap.val();
+                const agora = new Date();
+                const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
+                const seteDiasAtras = Date.now() - 604800000;
+
+                Object.keys(base).forEach(dataKey => {
+                    const dia = base[dataKey];
+                    if (dia && typeof dia === "object") {
+                        Object.keys(dia).forEach(ts => {
+                            processarRegistro(ts, dia[ts], periodo, agora, inicioHoje, seteDiasAtras);
+                        });
+                    }
+                });
+
+                // Deduplicação dos dados usando Map
+                const mapaUnico = new Map();
+                state.globalData.forEach(item => mapaUnico.set(`${item.ts}_${item.temp}_${item.hum}`, item));
+                state.globalData = [...mapaUnico.values()].sort((a, b) => b.ts - a.ts);
+
+                if (!state.globalData.length) return mostrarSemDados();
+
+                renderUI();
+                renderChart(periodo);
+            } catch (error) {
+                console.error(error);
+                elements.listaHistorico.innerHTML = `
+                    <div class="erro"><b>Erro ao carregar histórico.</b><br><br>${escapeHtml(error.message)}</div>
+                `;
+            }
+        }
+
+        function processarRegistro(ts, r, periodo, agora, inicioHoje, seteDiasAtras) {
+            if (!r || typeof r !== "object") return;
+
+            const temp = Number(r.temp);
+            const hum = Number(r.hum);
+            let timestamp = Number(ts);
+
+            if (!Number.isFinite(temp) || !Number.isFinite(hum) || !Number.isFinite(timestamp)) return;
+
+            if (timestamp > 1e11) timestamp = Math.floor(timestamp / 1000);
+
+            const dataObj = new Date(timestamp * 1000);
+            if (isNaN(dataObj.getTime())) return;
+
+            const ms = timestamp * 1000;
+            const ehDiario = periodo === "diario" && ms >= inicioHoje;
+            const ehSemanal = periodo === "semanal" && ms >= seteDiasAtras;
+            const ehMensal = periodo === "mensal" && dataObj.getMonth() === agora.getMonth() && dataObj.getFullYear() === agora.getFullYear();
+            const ehAnual = periodo === "anual" && dataObj.getFullYear() === agora.getFullYear();
+
+            if (ehDiario || ehSemanal || ehMensal || ehAnual) {
+                state.globalData.push({
+                    ts: timestamp,
+                    temp,
+                    hum,
+                    data: dataObj.toLocaleDateString("pt-BR"),
+                    hora: dataObj.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                });
+            }
+        }
+
+        /**
+         * Renderização da Interface
+         */
+        function renderUI() {
+            elements.listaHistorico.innerHTML = "";
+            let ultimaData = "";
+
+            state.globalData.forEach(d => {
+                if (d.data !== ultimaData) {
+                    const divider = document.createElement("div");
+                    divider.className = "data-divider";
+                    divider.innerHTML = `<span>${d.data}</span>`;
+                    elements.listaHistorico.appendChild(divider);
+                    ultimaData = d.data;
+                }
+
+                const erroTemp = d.temp > state.limites.tMax || d.temp < state.limites.tMin;
+                const erroHum = d.hum > state.limites.hMax || d.hum < state.limites.hMin;
+                const temErro = erroTemp || erroHum;
+
+                const itemDiv = document.createElement("div");
+                itemDiv.className = `item ${temErro ? "alerta" : ""}`;
+                itemDiv.innerHTML = `
+                    <div><b>${d.hora}</b></div>
+                    <div style="display:flex; gap:20px; text-align:right">
+                        <div>
+                            <small>TEMP</small><br>
+                            <span class="${erroTemp ? "valor-critico" : ""}">${d.temp.toFixed(1)}°C</span>
+                        </div>
+                        <div>
+                            <small>UMID</small><br>
+                            <span class="${erroHum ? "valor-critico" : ""}">${d.hum.toFixed(1)}%</span>
+                        </div>
+                        <div>
+                            <small>STATUS</small><br>
+                            <span class="${temErro ? "valor-critico" : "normal"}">${temErro ? "ALERTA" : "NORMAL"}</span>
+                        </div>
+                    </div>
+                `;
+                elements.listaHistorico.appendChild(itemDiv);
+            });
+        }
+
+        function renderChart(periodo) {
+            const dadosOrdenados = [...state.globalData].sort((a, b) => a.ts - b.ts);
+
+            const gradTemp = elements.chartCtx.createLinearGradient(0, 0, 0, 400);
+            gradTemp.addColorStop(0, "rgba(244, 63, 94, 0.2)");
+            gradTemp.addColorStop(1, "rgba(244, 63, 94, 0)");
+
+            const gradHum = elements.chartCtx.createLinearGradient(0, 0, 0, 400);
+            gradHum.addColorStop(0, "rgba(0, 122, 255, 0.2)");
+            gradHum.addColorStop(1, "rgba(0, 122, 255, 0)");
+
+            state.chartInstance = new Chart(elements.chartCtx, {
+                type: "line",
+                data: {
+                    labels: dadosOrdenados.map(d => 
+                        (periodo === "diario" || periodo === "semanal") 
+                            ? `${d.data.split("/")[0]}/${d.data.split("/")[1]} ${d.hora}` 
+                            : d.data
+                    ),
+                    datasets: [
+                        {
+                            label: "Temperatura (°C)",
+                            data: dadosOrdenados.map(d => d.temp),
+                            borderColor: "#f43f5e",
+                            backgroundColor: gradTemp,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: dadosOrdenados.length > 50 ? 0 : 2,
+                            borderWidth: 2
+                        },
+                        {
+                            label: "Umidade (%)",
+                            data: dadosOrdenados.map(d => d.hum),
+                            borderColor: "#007aff",
+                            backgroundColor: gradHum,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: dadosOrdenados.length > 50 ? 0 : 2,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: "index", intersect: false },
+                    plugins: {
+                        legend: { labels: { font: { family: "Inter", weight: "bold" } } }
+                    },
+                    scales: {
+                        x: { ticks: { autoSkip: true, maxTicksLimit: 12 } },
+                        y: { grid: { color: "#f1f5f9" } }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Exportação de Relatório PDF
+         */
+        async function exportarPDF() {
+            if (!state.globalData.length) return alert("Não existem dados para exportar.");
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const activeTab = document.querySelector(".tab.active").innerText;
+            const originalText = elements.btnPdf.innerText;
+
+            elements.btnPdf.disabled = true;
+
+            const linhasPorPagina = 28;
+            const totalPaginas = Math.max(1, Math.ceil(state.globalData.length / linhasPorPagina));
+
+            const desenharHeader = (pagina) => {
+                doc.setFillColor(26, 54, 93);
+                doc.rect(0, 0, 210, 38, "F");
+                doc.setTextColor(255, 255, 255);
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(22);
+                doc.text("NEWENERGY", 15, 16);
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "normal");
+                doc.text("SISTEMA DE MONITORAMENTO", 15, 23);
+                doc.setFontSize(8);
+                doc.text(`SENSOR: ${state.sensorID}`, 15, 29);
+                doc.text(`RELATÓRIO: ${activeTab.toUpperCase()}`, 195, 15, { align: "right" });
+                doc.text(`DATA: ${new Date().toLocaleDateString("pt-BR")}`, 195, 21, { align: "right" });
+                doc.text(`PÁGINA: ${pagina} / ${totalPaginas}`, 195, 27, { align: "right" });
+                doc.setFillColor(0, 122, 255);
+                doc.rect(0, 38, 210, 1.2, "F");
+            };
+
+            const desenharTabelaHeader = (yPos) => {
+                doc.setFillColor(245, 248, 251);
+                doc.rect(15, yPos - 6, 180, 10, "F");
+                doc.setDrawColor(200, 210, 220);
+                doc.line(15, yPos + 4, 195, yPos + 4);
+                doc.setTextColor(26, 54, 93);
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(9);
+                doc.text("DATA / HORA", 20, yPos);
+                doc.text("TEMPERATURA", 78, yPos);
+                doc.text("UMIDADE", 128, yPos);
+                doc.text("STATUS", 172, yPos);
+                return yPos + 10;
+            };
+
+            let paginaAtual = 1;
+            desenharHeader(paginaAtual);
+            let y = desenharTabelaHeader(55);
+
+            for (let i = 0; i < state.globalData.length; i++) {
+                const item = state.globalData[i];
+
+                if (y > 280) {
+                    doc.addPage();
+                    paginaAtual++;
+                    desenharHeader(paginaAtual);
+                    y = desenharTabelaHeader(55);
+                }
+
+                const temErro = item.temp > state.limites.tMax || item.temp < state.limites.tMin || 
+                               item.hum > state.limites.hMax || item.hum < state.limites.hMin;
+
+                if (temErro) {
+                    doc.setFillColor(255, 241, 242);
+                    doc.rect(15, y - 5, 180, 8, "F");
+                    doc.setTextColor(225, 29, 72);
+                    doc.setFont("helvetica", "bold");
+                } else {
+                    doc.setTextColor(51, 65, 85);
+                    doc.setFont("helvetica", "normal");
+                }
+
+                doc.setFontSize(8);
+                doc.text(`${item.data} ${item.hora}`, 20, y);
+                doc.text(`${item.temp.toFixed(1)}°C`, 83, y);
+                doc.text(`${item.hum.toFixed(1)}%`, 133, y);
+                doc.setTextColor(...(temErro ? [225, 29, 72] : [16, 185, 129]));
+                doc.text(temErro ? "ALERTA" : "NORMAL", 172, y);
+
+                y += 8;
+
+                if (i % 20 === 0) {
+                    elements.btnPdf.innerText = `Gerando... ${Math.round((i / state.globalData.length) * 100)}%`;
+                    await new Promise(resolve => setTimeout(resolve, 1));
+                }
+            }
+
+            doc.setFontSize(7);
+            doc.setTextColor(148, 163, 184);
+            doc.text("NewEnergy Analytics - Monitoramento de Precisão", 105, 292, { align: "center" });
+
+            doc.save(`Relatorio_NewEnergy_${state.sensorID}_${activeTab.replace(/ /g, "_")}.pdf`);
+
+            elements.btnPdf.disabled = false;
+            elements.btnPdf.innerText = originalText;
+        }
+
+        /**
+         * Funções Auxiliares
+         */
+        function mostrarSemDados() {
+            elements.listaHistorico.innerHTML = '<p style="text-align:center;padding:40px">Nenhum registro encontrado para este período.</p>';
+        }
+
+        function voltarPainel() {
+            const idParam = state.sensorID ? encodeURIComponent(state.sensorID) : "";
+            window.location.href = `painel.html?id=${idParam}`;
+        }
+
+        function escapeHtml(string) {
+            return String(string).replace(/[&<>"']/g, match => {
+                const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+                return map[match];
+            });
+        }
+    </script>
+</body>
+</html>
