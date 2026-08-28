@@ -279,7 +279,7 @@
         </div>
 
         <div id="erroFirebase"></div>
-        <div class="aviso">Histórico carregado a partir de <b>historico/diario</b>.</div>
+        <div class="aviso">Histórico sincronizado com <b>historico/diario</b>.</div>
 
         <div class="tabs" id="tabsGroup">
             <button class="tab active" data-periodo="diario">Hoje</button>
@@ -389,6 +389,7 @@
                 elements.sensorLocal.textContent = state.sensorConfig.nome || "--";
                 elements.sensorCliente.textContent = state.sensorConfig.clientID || "--";
 
+                // Carrega limites específicos do sensor ou globais
                 const configAlertasSnap = await db.ref("config_alertas").once("value");
                 if (configAlertasSnap.exists()) {
                     const cfg = configAlertasSnap.val();
@@ -421,7 +422,7 @@
                 const base = historicoSnap.val();
                 const agora = new Date();
                 const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
-                const seteDiasAtras = Date.now() - 604800000;
+                const seteDiasAtras = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
                 Object.keys(base).forEach(dataKey => {
                     const dia = base[dataKey];
@@ -452,12 +453,17 @@
         function processarRegistro(ts, r, periodo, agora, inicioHoje, seteDiasAtras) {
             if (!r || typeof r !== "object") return;
 
+            // Valida se o registro pertence ao sensor selecionado (se o campo sensor/sensorID existir)
+            const idRegistro = r.sensor || r.sensorID || r.id;
+            if (idRegistro && idRegistro !== state.sensorID) return;
+
             const temp = Number(r.temp);
             const hum = Number(r.hum);
             let timestamp = Number(ts);
 
             if (!Number.isFinite(temp) || !Number.isFinite(hum) || !Number.isFinite(timestamp)) return;
 
+            // Tratamento caso o timestamp esteja em milissegundos
             if (timestamp > 1e11) timestamp = Math.floor(timestamp / 1000);
 
             const dataObj = new Date(timestamp * 1000);
