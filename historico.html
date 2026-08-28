@@ -213,7 +213,7 @@
         sensorConfig: null,
         globalData: [],
         chartInstance: null,
-        limites: { tMin: 18, tMax: 24.5, hMin: 45, hMax: 65 }
+        limites: { tMin: null, tMax: null, hMin: null, hMax: null }
     };
 
     if (!firebase.apps.length) {
@@ -270,21 +270,38 @@
     async function carregarSensor() {
         try {
             const sensorSnap = await db.ref(`central_sensores/${state.sensorID}`).once("value");
+            
             if (sensorSnap.exists()) {
                 state.sensorConfig = sensorSnap.val();
                 elements.sensorNome.textContent = state.sensorID;
                 elements.sensorLocal.textContent = state.sensorConfig.nome || state.sensorConfig.local || "--";
                 elements.sensorCliente.textContent = state.sensorConfig.clientID || state.sensorConfig.cliente || "--";
+
+                // Extrai limites específicos do sensor
+                const s = state.sensorConfig;
+                if (s.tempMin !== undefined && s.tempMin !== null) state.limites.tMin = Number(s.tempMin);
+                else if (s.tMin !== undefined && s.tMin !== null) state.limites.tMin = Number(s.tMin);
+
+                if (s.tempMax !== undefined && s.tempMax !== null) state.limites.tMax = Number(s.tempMax);
+                else if (s.tMax !== undefined && s.tMax !== null) state.limites.tMax = Number(s.tMax);
+
+                if (s.humMin !== undefined && s.humMin !== null) state.limites.hMin = Number(s.humMin);
+                else if (s.hMin !== undefined && s.hMin !== null) state.limites.hMin = Number(s.hMin);
+
+                if (s.humMax !== undefined && s.humMax !== null) state.limites.hMax = Number(s.humMax);
+                else if (s.hMax !== undefined && s.hMax !== null) state.limites.hMax = Number(s.hMax);
             } else {
                 elements.sensorNome.textContent = state.sensorID;
             }
 
+            // Fallback: se o sensor não possuir limites cadastrados, usa o config_alertas
             const configAlertasSnap = await db.ref("config_alertas").once("value");
             if (configAlertasSnap.exists()) {
-                const cfg = configAlertasSnap.val();
-                ["tMin", "tMax", "hMin", "hMax"].forEach(k => {
-                    if (cfg[k] !== undefined) state.limites[k] = Number(cfg[k]);
-                });
+                const cfgGlobal = configAlertasSnap.val();
+                if (state.limites.tMin === null && cfgGlobal.tMin !== undefined) state.limites.tMin = Number(cfgGlobal.tMin);
+                if (state.limites.tMax === null && cfgGlobal.tMax !== undefined) state.limites.tMax = Number(cfgGlobal.tMax);
+                if (state.limites.hMin === null && cfgGlobal.hMin !== undefined) state.limites.hMin = Number(cfgGlobal.hMin);
+                if (state.limites.hMax === null && cfgGlobal.hMax !== undefined) state.limites.hMax = Number(cfgGlobal.hMax);
             }
 
             fetchData("diario");
@@ -311,7 +328,7 @@
             // 1. Tenta buscar primeiramente na estrutura específica do Sensor: historico/{sensorID}
             let historicoSnap = await db.ref(`historico/${state.sensorID}`).once("value");
             
-            // 2. Fallback: Se não encontrar, busca na estrutura agrupada historico/diario
+            // 2. Fallback: busca na estrutura agrupada historico/diario
             if (!historicoSnap.exists()) {
                 historicoSnap = await db.ref("historico/diario").once("value");
             }
@@ -328,13 +345,11 @@
             function varrerEProcessar(obj) {
                 if (!obj || typeof obj !== "object") return;
 
-                // Caso o objeto seja diretamente um registro com leitura
                 if (obj.temp !== undefined || obj.hum !== undefined || obj.temperatura !== undefined) {
                     processarRegistro(obj.timestamp || obj.ts || Date.now(), obj, periodo, agora, inicioHoje, seteDiasAtras);
                     return;
                 }
 
-                // Varrida recursiva/chaveamento de nós
                 Object.keys(obj).forEach(chave => {
                     const subItem = obj[chave];
                     if (subItem && typeof subItem === "object") {
@@ -369,7 +384,6 @@
     function processarRegistro(keyOrTs, r, periodo, agora, inicioHoje, seteDiasAtras) {
         if (!r || typeof r !== "object") return;
 
-        // Validação de vínculo de sensor
         const idRegistro = r.sensor || r.sensorID || r.id;
         if (idRegistro && idRegistro !== state.sensorID) return;
 
@@ -380,7 +394,6 @@
 
         if (!Number.isFinite(temp) || !Number.isFinite(hum) || !Number.isFinite(timestamp)) return;
 
-        // Trata timestamps em segundos vs milissegundos
         if (timestamp < 1e11) timestamp = timestamp * 1000;
 
         const dataObj = new Date(timestamp);
@@ -403,6 +416,14 @@
         }
     }
 
+    function checarErro(temp, hum) {
+        const erroTemp = (state.limites.tMax !== null && temp > state.limites.tMax) || 
+                         (state.limites.tMin !== null && temp < state.limites.tMin);
+        const erroHum = (state.limites.hMax !== null && hum > state.limites.hMax) || 
+                        (state.limites.hMin !== null && hum < state.limites.hMin);
+        return { erroTemp, erroHum, temErro: erroTemp || erroHum };
+    }
+
     function renderUI() {
         elements.listaHistorico.innerHTML = "";
         let ultimaData = "";
@@ -416,9 +437,7 @@
                 ultimaData = d.data;
             }
 
-            const erroTemp = d.temp > state.limites.tMax || d.temp < state.limites.tMin;
-            const erroHum = d.hum > state.limites.hMax || d.hum < state.limites.hMin;
-            const temErro = erroTemp || erroHum;
+            const { erroTemp, erroHum, temErro } = checarErro(d.temp, d.hum);
 
             const itemDiv = document.createElement("div");
             itemDiv.className = `item ${temErro ? "alerta" : ""}`;
@@ -565,8 +584,7 @@
                 y = desenharTabelaHeader(55);
             }
 
-            const temErro = item.temp > state.limites.tMax || item.temp < state.limites.tMin || 
-                           item.hum > state.limites.hMax || item.hum < state.limites.hMin;
+            const { temErro } = checarErro(item.temp, item.hum);
 
             if (temErro) {
                 doc.setFillColor(255, 241, 242);
