@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -241,6 +242,7 @@ const firebaseConfig = {
 
     appId:
         "1:440418278168:web:15c519eb00200a33435c6d"
+
 };
 
 
@@ -465,10 +467,14 @@ function criarCard(
 
 
 
+        <!-- =================================================
+             CORRIGIDO:
+             Agora abre historico.html
+        ================================================== -->
+
         <a
-        href="painel.html?id=${encodeURIComponent(id)}"
-        target="_blank"
-        class="block text-center bg-blue-50 text-blue-600 font-bold rounded-xl py-3 mt-4"
+        href="historico.html?id=${encodeURIComponent(id)}"
+        class="block text-center bg-blue-50 text-blue-600 font-bold rounded-xl py-3 mt-4 hover:bg-blue-100"
         >
             Ver Painel Detalhado
         </a>
@@ -514,10 +520,12 @@ function criarCard(
                     elemento.textContent =
                         valor.toFixed(1) +
                         " °C";
+
                 }
 
             }
         );
+
     }
 
 
@@ -554,10 +562,12 @@ function criarCard(
                     elemento.textContent =
                         valor.toFixed(1) +
                         " %";
+
                 }
 
             }
         );
+
     }
 
 
@@ -581,6 +591,7 @@ function criarCard(
 
             }
         );
+
     }
 
 }
@@ -635,13 +646,15 @@ function atualizarOnline(
         elemento.className =
             "text-sm text-emerald-600 font-bold";
 
-    } else {
+    }
+    else {
 
         elemento.textContent =
             "● Offline";
 
         elemento.className =
             "text-sm text-rose-600 font-bold";
+
     }
 
 
@@ -798,13 +811,6 @@ function salvar(event){
         );
 
 
-    // -----------------------------------------------
-    // EXTRAI O NÚMERO
-    // SENSOR_02 -> 2
-    // SENSOR_03 -> 3
-    // SENSOR_04 -> 4
-    // -----------------------------------------------
-
     const resultado =
         id.match(
             /^SENSOR_(\d+)$/
@@ -818,6 +824,7 @@ function salvar(event){
         );
 
         return;
+
     }
 
 
@@ -837,12 +844,14 @@ function salvar(event){
         );
 
         return;
+
     }
 
 
-    // -----------------------------------------------
+
+    // =================================================
     // ROTAS AUTOMÁTICAS
-    // -----------------------------------------------
+    // =================================================
 
     const dados = {
 
@@ -961,3 +970,4 @@ function excluir(id){
 
 </body>
 </html>
+```
