@@ -33,37 +33,96 @@
         <div id="sensores" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </main>
 
-    <!-- MODAL -->
-    <div id="modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md">
-            <div class="flex justify-between mb-5">
-                <h2 id="titulo" class="text-lg font-bold">Novo Sensor</h2>
-                <button onclick="fecharModal()" class="text-slate-500">Cancelar</button>
+    <!-- MODAL DE CONFIGURAÇÃO / PAINEL DE SERVIÇO -->
+    <div id="modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg my-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-5 border-b pb-3">
+                <div>
+                    <h2 id="titulo" class="text-lg font-bold text-slate-800">Novo Sensor</h2>
+                    <p class="text-xs text-slate-500">Configurações Gerais e Serviços</p>
+                </div>
+                <button onclick="fecharModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
             </div>
 
-            <form onsubmit="salvar(event)" class="space-y-3">
-                <input id="id" required placeholder="SENSOR_03" class="campo">
-                <input id="nome" required placeholder="Local / Equipamento" class="campo">
-                <input id="cliente" required placeholder="Nome do Cliente" class="campo">
-
-                <div>
-                    <label class="text-xs font-bold text-slate-500">Rota da temperatura</label>
-                    <input id="rotaTemp" required placeholder="/temp2" class="campo">
+            <form onsubmit="salvar(event)" class="space-y-4">
+                
+                <!-- DADOS BÁSICOS -->
+                <div class="space-y-2">
+                    <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Informações Principais</span>
+                    <input id="id" required placeholder="SENSOR_01" class="campo">
+                    <input id="nome" required placeholder="Local / Equipamento (Ex: Sala Vacinas)" class="campo">
+                    <input id="cliente" required placeholder="Nome do Cliente" class="campo">
                 </div>
 
-                <div>
-                    <label class="text-xs font-bold text-slate-500">Rota da umidade</label>
-                    <input id="rotaHum" required placeholder="/hum2" class="campo">
+                <!-- PARÂMETROS DE ALERTA -->
+                <div class="space-y-2 pt-2 border-t border-slate-100">
+                    <span class="text-xs font-bold text-amber-600 uppercase tracking-wider">Limites de Alerta & Notificação</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">Temp. Mínima (°C)</label>
+                            <input id="tempMin" type="number" step="0.1" placeholder="2.0" class="campo">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">Temp. Máxima (°C)</label>
+                            <input id="tempMax" type="number" step="0.1" placeholder="8.0" class="campo">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">Umid. Mínima (%)</label>
+                            <input id="humMin" type="number" step="1" placeholder="30" class="campo">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">Umid. Máxima (%)</label>
+                            <input id="humMax" type="number" step="1" placeholder="70" class="campo">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500">E-mail para Alertas</label>
+                        <input id="emailAlerta" type="email" placeholder="tecnico@empresa.com" class="campo">
+                    </div>
                 </div>
 
-                <div>
-                    <label class="text-xs font-bold text-slate-500">Rota do último contato</label>
-                    <input id="rotaLastSeen" required placeholder="/last_seen2" class="campo">
+                <!-- OPERAÇÃO E FREQUÊNCIA -->
+                <div class="space-y-2 pt-2 border-t border-slate-100">
+                    <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Parâmetros Operacionais</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">Leitura (segundos)</label>
+                            <input id="freqRegistro" type="number" placeholder="60" class="campo">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">Alerta (minutos)</label>
+                            <input id="intervaloAlerta" type="number" placeholder="15" class="campo">
+                        </div>
+                    </div>
                 </div>
 
-                <button id="salvarBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl">
-                    Salvar Sensor
-                </button>
+                <!-- ROTAS DO BANCO DE DADOS -->
+                <div class="space-y-2 pt-2 border-t border-slate-100">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Mapeamento Firebase</span>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500">Rota Temperatura</label>
+                        <input id="rotaTemp" required placeholder="/temp" class="campo">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500">Rota Umidade</label>
+                        <input id="rotaHum" required placeholder="/hum" class="campo">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500">Rota Último Contato</label>
+                        <input id="rotaLastSeen" required placeholder="/last_seen" class="campo">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-3 border-t">
+                    <button type="button" onclick="fecharModal()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl">
+                        Cancelar
+                    </button>
+                    <button id="salvarBtn" type="submit" class="w-2/3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl">
+                        Salvar Configurações
+                    </button>
+                </div>
             </form>
         </div>
     </div>
@@ -76,18 +135,14 @@
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 10px;
-            padding: 11px 14px;
+            padding: 10px 12px;
+            font-size: 0.875rem;
             outline: none;
         }
 
         .campo:focus {
             border-color: #3b82f6;
             box-shadow: 0 0 0 2px #bfdbfe;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 4px;
         }
     </style>
 
@@ -111,12 +166,9 @@
         let sensorEditando = null;
         let listeners = {};
 
-        // LIMPAR ESCUTADORES ANTIGOS
         function limparListeners() {
             Object.keys(listeners).forEach(rota => {
-                if (listeners[rota]) {
-                    listeners[rota].off();
-                }
+                if (listeners[rota]) listeners[rota].off();
             });
             listeners = {};
         }
@@ -150,36 +202,44 @@
             card.id = `card-${id}`;
             card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm p-5";
 
+            const tempMin = sensor.tempMin !== undefined ? sensor.tempMin + "°C" : "--";
+            const tempMax = sensor.tempMax !== undefined ? sensor.tempMax + "°C" : "--";
+
             card.innerHTML = `
-                <div class="flex justify-between">
+                <div class="flex justify-between items-start">
                     <div>
                         <p class="text-xs text-slate-400 font-bold">${escapeHtml(id)}</p>
                         <h2 class="text-lg font-bold text-slate-800">${escapeHtml(sensor.nome || "Sensor")}</h2>
                         <p class="text-xs text-slate-500">Cliente: ${escapeHtml(sensor.clientID || "-")}</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="editar('${escapeAttr(id)}')" class="bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">✏️</button>
-                        <button onclick="excluir('${escapeAttr(id)}')" class="bg-slate-100 px-2 py-1 rounded hover:bg-slate-200">🗑️</button>
+                        <button onclick="editar('${escapeAttr(id)}')" title="Painel de Serviço / Configurações" class="bg-slate-100 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition">✏️</button>
+                        <button onclick="excluir('${escapeAttr(id)}')" title="Excluir Sensor" class="bg-slate-100 px-3 py-1.5 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition">🗑️</button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mt-5">
-                    <div class="bg-slate-50 rounded-xl p-4 text-center">
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
                         <p class="text-xs text-slate-500">Temperatura</p>
                         <strong id="temp-${escapeAttr(id)}" class="text-2xl text-slate-800">-- °C</strong>
                     </div>
-                    <div class="bg-slate-50 rounded-xl p-4 text-center">
+                    <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
                         <p class="text-xs text-slate-500">Umidade</p>
                         <strong id="hum-${escapeAttr(id)}" class="text-2xl text-slate-800">-- %</strong>
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center mt-4 pt-3 border-t">
+                <div class="mt-3 px-3 py-2 bg-slate-50 rounded-lg flex justify-between text-xs text-slate-500">
+                    <span>Faixa Ideal: <strong>${tempMin}</strong> a <strong>${tempMax}</strong></span>
+                    <span>Intervalo: <strong>${sensor.freqRegistro || 60}s</strong></span>
+                </div>
+
+                <div class="flex justify-between items-center mt-3 pt-3 border-t">
                     <span id="online-${escapeAttr(id)}" class="text-sm text-slate-500">● Offline</span>
                     <span id="seen-${escapeAttr(id)}" class="text-xs text-slate-500">--</span>
                 </div>
 
-                <a href="historico.html?id=${encodeURIComponent(id)}" target="_blank" class="block text-center bg-blue-50 text-blue-600 font-bold rounded-xl py-3 mt-4">
+                <a href="historico.html?id=${encodeURIComponent(id)}" target="_blank" class="block text-center bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold rounded-xl py-2.5 mt-3 transition">
                     Ver Histórico
                 </a>
             `;
@@ -225,13 +285,10 @@
             listeners[rotaLimpa] = ref;
         }
 
-        // NORMALIZAR ROTA
         function normalizarRota(rota) {
             if (!rota) return "";
             rota = String(rota).trim();
-            if (rota.startsWith("/")) {
-                rota = rota.substring(1);
-            }
+            if (rota.startsWith("/")) rota = rota.substring(1);
             return rota;
         }
 
@@ -240,9 +297,7 @@
             if (!Number.isFinite(Number(timestamp))) return;
 
             let ts = Number(timestamp);
-            if (ts > 100000000000) {
-                ts = Math.floor(ts / 1000);
-            }
+            if (ts > 100000000000) ts = Math.floor(ts / 1000);
 
             const segundos = Math.floor(Date.now() / 1000) - ts;
             const online = segundos >= 0 && segundos < 60;
@@ -265,7 +320,7 @@
             }
         }
 
-        // NOVO SENSOR
+        // ABRIR MODAL
         function abrirModal() {
             editando = false;
             sensorEditando = null;
@@ -276,7 +331,7 @@
             document.getElementById("modal").classList.remove("hidden");
         }
 
-        // SUGERIR ROTAS
+        // SUGERIR ROTAS AUTOMÁTICAS
         function sugerirRotas() {
             if (editando) return;
             const valor = document.getElementById("id").value.trim().toUpperCase();
@@ -295,12 +350,11 @@
             }
         }
 
-        // FECHAR MODAL
         function fecharModal() {
             document.getElementById("modal").classList.add("hidden");
         }
 
-        // EDITAR SENSOR
+        // EDITAR / PAINEL DE SERVIÇO INDIVIDUAL
         function editar(id) {
             db.ref(`central_sensores/${id}`).once("value").then(snapshot => {
                 if (!snapshot.exists()) {
@@ -312,14 +366,22 @@
                 editando = true;
                 sensorEditando = id;
 
-                document.getElementById("titulo").textContent = "Editar " + id;
+                document.getElementById("titulo").textContent = "Painel de Serviço: " + id;
                 const campoId = document.getElementById("id");
                 campoId.value = id;
                 campoId.disabled = true;
                 campoId.oninput = null;
 
+                // Preencher campos
                 document.getElementById("nome").value = s.nome || "";
                 document.getElementById("cliente").value = s.clientID || "";
+                document.getElementById("tempMin").value = s.tempMin !== undefined ? s.tempMin : "";
+                document.getElementById("tempMax").value = s.tempMax !== undefined ? s.tempMax : "";
+                document.getElementById("humMin").value = s.humMin !== undefined ? s.humMin : "";
+                document.getElementById("humMax").value = s.humMax !== undefined ? s.humMax : "";
+                document.getElementById("emailAlerta").value = s.emailAlerta || "";
+                document.getElementById("freqRegistro").value = s.freqRegistro || "";
+                document.getElementById("intervaloAlerta").value = s.intervaloAlerta || "";
                 document.getElementById("rotaTemp").value = s.rotaTemp || "";
                 document.getElementById("rotaHum").value = s.rotaHum || "";
                 document.getElementById("rotaLastSeen").value = s.rotaLastSeen || "";
@@ -327,70 +389,53 @@
                 document.getElementById("modal").classList.remove("hidden");
             }).catch(error => {
                 console.error(error);
-                alert("Erro ao carregar sensor.");
+                alert("Erro ao carregar dados do sensor.");
             });
         }
 
-        // SALVAR SENSOR
+        // SALVAR DADOS
         function salvar(event) {
             event.preventDefault();
             const id = document.getElementById("id").value.trim().toUpperCase().replace(/\s+/g, "_");
-            const resultado = id.match(/^SENSOR_(\d+)$/);
-
-            if (!resultado) {
-                alert("Use o formato SENSOR_01, SENSOR_02, SENSOR_03...");
-                return;
-            }
-
-            const numero = Number(resultado[1]);
-            if (numero < 1 || numero > 999) {
-                alert("Número do sensor inválido.");
-                return;
-            }
-
-            const nome = document.getElementById("nome").value.trim();
-            const cliente = document.getElementById("cliente").value.trim();
-            const rotaTemp = document.getElementById("rotaTemp").value.trim();
-            const rotaHum = document.getElementById("rotaHum").value.trim();
-            const rotaLastSeen = document.getElementById("rotaLastSeen").value.trim();
-
-            if (!rotaTemp || !rotaHum || !rotaLastSeen) {
-                alert("Informe todas as rotas do sensor.");
-                return;
-            }
 
             const dados = {
-                nome: nome,
-                clientID: cliente,
-                rotaTemp: rotaTemp,
-                rotaHum: rotaHum,
-                rotaLastSeen: rotaLastSeen
+                nome: document.getElementById("nome").value.trim(),
+                clientID: document.getElementById("cliente").value.trim(),
+                tempMin: parseFloat(document.getElementById("tempMin").value) || null,
+                tempMax: parseFloat(document.getElementById("tempMax").value) || null,
+                humMin: parseFloat(document.getElementById("humMin").value) || null,
+                humMax: parseFloat(document.getElementById("humMax").value) || null,
+                emailAlerta: document.getElementById("emailAlerta").value.trim(),
+                freqRegistro: parseInt(document.getElementById("freqRegistro").value) || 60,
+                intervaloAlerta: parseInt(document.getElementById("intervaloAlerta").value) || 15,
+                rotaTemp: document.getElementById("rotaTemp").value.trim(),
+                rotaHum: document.getElementById("rotaHum").value.trim(),
+                rotaLastSeen: document.getElementById("rotaLastSeen").value.trim()
             };
 
-            db.ref(`central_sensores/${id}`).set(dados).then(() => {
-                alert(editando ? "Sensor atualizado!" : "Sensor cadastrado!");
+            db.ref(`central_sensores/${id}`).update(dados).then(() => {
+                alert(editando ? "Configurações atualizadas!" : "Sensor cadastrado!");
                 fecharModal();
             }).catch(error => {
                 console.error(error);
-                alert("Erro ao salvar. Verifique as regras do Firebase.");
+                alert("Erro ao salvar alterações no Firebase.");
             });
         }
 
-        // EXCLUIR SENSOR
+        // EXCLUIR
         function excluir(id) {
-            if (!confirm(`Excluir ${id}?`)) return;
+            if (!confirm(`Deseja excluir permanentemente o ${id}?`)) return;
 
             db.ref(`central_sensores/${id}`).remove().then(() => {
-                alert("Sensor removido.");
+                alert("Sensor removido com sucesso.");
             }).catch(error => {
                 console.error(error);
                 alert("Erro ao excluir.");
             });
         }
 
-        // ESCAPE HTML
         function escapeHtml(valor) {
-            return String(valor)
+            return String(valor || "")
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
@@ -398,18 +443,14 @@
                 .replace(/'/g, "&#039;");
         }
 
-        // ESCAPE ATRIBUTO
         function escapeAttr(valor) {
-            return String(valor)
+            return String(valor || "")
                 .replace(/\\/g, "\\\\")
                 .replace(/'/g, "\\'");
         }
 
-        // ATALHO TECLADO (ESC)
         document.addEventListener("keydown", event => {
-            if (event.key === "Escape") {
-                fecharModal();
-            }
+            if (event.key === "Escape") fecharModal();
         });
     </script>
 </body>
