@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -20,24 +21,16 @@
 <style>
 
 :root {
-
     --brand-primary:#1a365d;
     --brand-accent:#007aff;
-
     --bg-body:#f8fafc;
     --card-bg:#ffffff;
-
     --text-main:#1e293b;
     --text-muted:#64748b;
-
     --border:#e2e8f0;
-
     --danger:#e11d48;
     --success:#10b981;
-
-    --shadow:
-        0 10px 15px -3px rgba(0,0,0,.1);
-
+    --shadow:0 10px 15px -3px rgba(0,0,0,.1);
 }
 
 * {
@@ -45,356 +38,212 @@
 }
 
 body {
-
     margin:0;
-
     font-family:'Inter',sans-serif;
-
     background:var(--bg-body);
-
     color:var(--text-main);
-
     display:flex;
-
     justify-content:center;
-
     padding:20px;
-
 }
 
 .card {
-
     background:var(--card-bg);
-
     border-radius:16px;
-
     padding:30px;
-
     width:100%;
-
     max-width:1100px;
-
     border:1px solid var(--border);
-
     box-shadow:var(--shadow);
-
 }
 
 header {
-
     border-left:6px solid var(--brand-primary);
-
     padding-left:20px;
-
     margin-bottom:25px;
-
 }
 
 header h1 {
-
     margin:0;
-
     font-size:26px;
-
     font-weight:800;
-
     color:var(--brand-primary);
-
     letter-spacing:-1px;
-
 }
 
 header p {
-
     margin:4px 0 0;
-
     color:var(--brand-accent);
-
     font-size:12px;
-
     font-weight:700;
-
     text-transform:uppercase;
-
     letter-spacing:1px;
-
 }
 
 .info-bar {
-
     display:flex;
-
     justify-content:space-between;
-
     align-items:center;
-
     gap:15px;
-
     background:#f8fafc;
-
     border:1px solid var(--border);
-
     border-radius:12px;
-
     padding:14px 16px;
-
     margin-bottom:20px;
-
     flex-wrap:wrap;
-
 }
 
 .sensor-info {
-
     font-size:13px;
-
     color:var(--text-muted);
-
 }
 
 .sensor-info strong {
-
     color:var(--brand-primary);
-
 }
 
 .tabs {
-
     display:flex;
-
     background:#f1f5f9;
-
     padding:4px;
-
     border-radius:12px;
-
     margin-bottom:25px;
-
     gap:4px;
-
     flex-wrap:wrap;
-
 }
 
 .tab {
-
     flex:1;
-
     min-width:100px;
-
     padding:12px;
-
     text-align:center;
-
     border-radius:9px;
-
     cursor:pointer;
-
     font-size:12px;
-
     font-weight:600;
-
     color:var(--text-muted);
-
     transition:.3s;
-
 }
 
 .tab.active {
-
     background:white;
-
     color:var(--brand-primary);
-
-    box-shadow:
-        0 4px 6px -1px rgba(0,0,0,.05);
-
+    box-shadow:0 4px 6px -1px rgba(0,0,0,.05);
 }
 
 .chart-container {
-
     background:#fff;
-
     border-radius:12px;
-
     padding:15px;
-
     margin-bottom:30px;
-
     border:1px solid var(--border);
-
     height:380px;
-
 }
 
 #lista {
-
     max-height:500px;
-
     overflow-y:auto;
-
     padding-right:10px;
-
 }
 
 .data-divider {
-
     color:var(--brand-primary);
-
     font-size:11px;
-
     font-weight:800;
-
     margin:25px 0 12px;
-
     display:flex;
-
     align-items:center;
-
 }
 
 .data-divider::after {
-
     content:"";
-
     flex:1;
-
     height:1px;
-
     background:var(--border);
-
     margin-left:15px;
-
 }
 
 .item {
-
     background:#fff;
-
     padding:14px 18px;
-
     border-radius:10px;
-
     margin-bottom:8px;
-
     display:flex;
-
     justify-content:space-between;
-
     align-items:center;
-
     border:1px solid var(--border);
-
 }
 
 .item.alerta {
-
     border-left:4px solid var(--danger);
-
     background:#fff1f2;
-
 }
 
 .btn-group {
-
     display:flex;
-
     gap:15px;
-
     margin-top:30px;
-
 }
 
 .btn {
-
     flex:1;
-
     padding:16px;
-
     border:none;
-
     border-radius:12px;
-
     font-weight:700;
-
     cursor:pointer;
-
     font-size:14px;
-
 }
 
 .btn-pdf {
-
     background:var(--brand-primary);
-
     color:#fff;
-
 }
 
 .btn-pdf:disabled {
-
     background:#94a3b8;
-
     cursor:not-allowed;
-
 }
 
 .btn-back {
-
     background:#fff;
-
     color:var(--text-muted);
-
     border:1.5px solid var(--border);
-
 }
 
 .valor-critico {
-
     color:var(--danger)!important;
-
     font-weight:900;
-
 }
 
 .normal {
-
     color:var(--success);
-
     font-weight:800;
-
 }
 
 #lista::-webkit-scrollbar {
-
     width:5px;
-
 }
 
 #lista::-webkit-scrollbar-thumb {
-
     background:#cbd5e1;
-
     border-radius:10px;
-
 }
 
 .erro {
-
     background:#fff1f2;
-
     border:1px solid #fecdd3;
-
     color:#be123c;
-
     padding:15px;
-
     border-radius:10px;
-
     margin-bottom:20px;
-
     font-size:13px;
+}
 
+.loading {
+    text-align:center;
+    padding:40px;
+    color:var(--text-muted);
 }
 
 @media(max-width:700px) {
@@ -421,28 +270,10 @@ header p {
 
 </style>
 
-
-<!-- =====================================================
-     FIREBASE
-===================================================== -->
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-
-<!-- =====================================================
-     CHART
-===================================================== -->
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-
-<!-- =====================================================
-     PDF
-===================================================== -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -451,9 +282,7 @@ header p {
 
 <body>
 
-
 <div class="card">
-
 
 <header>
 
@@ -463,10 +292,6 @@ header p {
 
 </header>
 
-
-<!-- =====================================================
-     INFORMAÇÕES DO SENSOR
-===================================================== -->
 
 <div class="info-bar">
 
@@ -508,10 +333,6 @@ header p {
 <div id="erroFirebase"></div>
 
 
-<!-- =====================================================
-     ABAS
-===================================================== -->
-
 <div class="tabs">
 
     <div
@@ -521,7 +342,6 @@ header p {
         Hoje
     </div>
 
-
     <div
         class="tab"
         data-periodo="semanal"
@@ -529,14 +349,12 @@ header p {
         Últimos 7 Dias
     </div>
 
-
     <div
         class="tab"
         data-periodo="mensal"
     >
         Mês Atual
     </div>
-
 
     <div
         class="tab"
@@ -548,10 +366,6 @@ header p {
 </div>
 
 
-<!-- =====================================================
-     GRÁFICO
-===================================================== -->
-
 <div class="chart-container">
 
     <canvas id="mainChart"></canvas>
@@ -559,22 +373,14 @@ header p {
 </div>
 
 
-<!-- =====================================================
-     LISTA
-===================================================== -->
-
 <div id="lista">
 
-    <p style="text-align:center;padding:40px;">
+    <p class="loading">
         Carregando histórico...
     </p>
 
 </div>
 
-
-<!-- =====================================================
-     BOTÕES
-===================================================== -->
 
 <div class="btn-group">
 
@@ -596,7 +402,6 @@ header p {
 
 </div>
 
-
 </div>
 
 
@@ -604,7 +409,7 @@ header p {
 
 
 // =====================================================
-// FIREBASE NESTU-02
+// FIREBASE
 // =====================================================
 
 const firebaseConfig = {
@@ -633,13 +438,9 @@ const firebaseConfig = {
 };
 
 
-firebase.initializeApp(
-    firebaseConfig
-);
+firebase.initializeApp(firebaseConfig);
 
-
-const db =
-    firebase.database();
+const db = firebase.database();
 
 
 // =====================================================
@@ -669,7 +470,7 @@ let limites = {
 
 
 // =====================================================
-// SENSOR DA URL
+// ID DO SENSOR
 // =====================================================
 
 const parametros =
@@ -683,7 +484,7 @@ sensorID =
 
 
 // =====================================================
-// INICIALIZAÇÃO
+// INICIAR
 // =====================================================
 
 if (!sensorID) {
@@ -704,8 +505,8 @@ if (!sensorID) {
 
             <br><br>
 
-            Abra o histórico através do
-            painel do sensor.
+            Abra o histórico através
+            do painel do sensor.
 
         </div>
 
@@ -720,7 +521,7 @@ else {
 
 
 // =====================================================
-// CARREGAR SENSOR
+// CARREGAR CONFIGURAÇÃO DO SENSOR
 // =====================================================
 
 async function carregarSensor() {
@@ -729,15 +530,15 @@ async function carregarSensor() {
 
         const snapshot =
             await db.ref(
-                `central_sensores/${sensorID}`
-            )
-            .once("value");
+                "central_sensores/" +
+                sensorID
+            ).once("value");
 
 
         if (!snapshot.exists()) {
 
             throw new Error(
-                `O sensor ${sensorID} não existe em central_sensores.`
+                "Sensor não encontrado em central_sensores."
             );
 
         }
@@ -772,19 +573,41 @@ async function carregarSensor() {
         const limiteSnap =
             await db.ref(
                 "config_alertas"
-            )
-            .once("value");
+            ).once("value");
 
 
         if (limiteSnap.exists()) {
 
-            limites = {
+            const config =
+                limiteSnap.val();
 
-                ...limites,
 
-                ...limiteSnap.val()
+            limites.tMin =
+                Number(
+                    config.tMin ??
+                    limites.tMin
+                );
 
-            };
+
+            limites.tMax =
+                Number(
+                    config.tMax ??
+                    limites.tMax
+                );
+
+
+            limites.hMin =
+                Number(
+                    config.hMin ??
+                    limites.hMin
+                );
+
+
+            limites.hMax =
+                Number(
+                    config.hMax ??
+                    limites.hMax
+                );
 
         }
 
@@ -808,7 +631,7 @@ async function carregarSensor() {
 
                 <br><br>
 
-                ${error.message}
+                ${escapeHTML(error.message)}
 
             </div>
 
@@ -833,7 +656,7 @@ async function fetchData(periodo) {
 
     listaDiv.innerHTML = `
 
-        <p style="text-align:center;padding:40px;">
+        <p class="loading">
             Sincronizando dados...
         </p>
 
@@ -854,15 +677,26 @@ async function fetchData(periodo) {
 
     try {
 
-        // =================================================
-        // BUSCA SOMENTE O HISTÓRICO
-        // =================================================
+        /*
+         * IMPORTANTE:
+         *
+         * O histórico é lido somente uma vez.
+         *
+         * Estrutura esperada:
+         *
+         * historico
+         *   diario
+         *     2026-08-28
+         *       SENSOR_02
+         *         1756387200
+         *           temp
+         *           hum
+         */
 
         const snapshot =
             await db.ref(
                 "historico/diario"
-            )
-            .once("value");
+            ).once("value");
 
 
         if (!snapshot.exists()) {
@@ -911,9 +745,36 @@ async function fetchData(periodo) {
             );
 
 
-        // =================================================
-        // PERCORRER OS DIAS
-        // =================================================
+        const inicioMes =
+            new Date(
+
+                agora.getFullYear(),
+
+                agora.getMonth(),
+
+                1,
+                0,
+                0,
+                0,
+                0
+
+            ).getTime();
+
+
+        const inicioAno =
+            new Date(
+
+                agora.getFullYear(),
+
+                0,
+                1,
+                0,
+                0,
+                0,
+                0
+
+            ).getTime();
+
 
         Object.keys(base).forEach(
             dataKey => {
@@ -933,17 +794,7 @@ async function fetchData(periodo) {
 
 
                 // =================================================
-                // PROCURAR O SENSOR PELO ID
-                //
-                // Exemplo:
-                //
-                // historico
-                //  diario
-                //   2026-08-28
-                //    SENSOR_02
-                //     timestamp
-                //      temp
-                //      hum
+                // ESTRUTURA POR SENSOR
                 // =================================================
 
                 if (
@@ -954,95 +805,97 @@ async function fetchData(periodo) {
                         dadosDia[sensorID];
 
 
-                    Object.keys(registros)
-                    .forEach(
-                        ts => {
+                    if (
+                        registros &&
+                        typeof registros === "object"
+                    ) {
 
-                            processarRegistro(
-
-                                ts,
-
-                                registros[ts],
-
-                                periodo,
-
-                                agora,
-
-                                inicioHoje,
-
-                                seteDiasAtras
-
-                            );
-
-                        }
-                    );
-
-                }
-
-
-                // =================================================
-                // COMPATIBILIDADE COM ESTRUTURA:
-                //
-                // dia
-                //   timestamp
-                //      temp
-                //      hum
-                //
-                // Essa estrutura só será utilizada se o
-                // histórico não tiver identificação de sensor.
-                // =================================================
-
-                else {
-
-                    Object.keys(dadosDia)
-                    .forEach(
-                        chave => {
-
-                            const registro =
-                                dadosDia[chave];
-
-
-                            if (
-                                chave === sensorID
-                            ) {
-
-                                return;
-
-                            }
-
-
-                            if (
-                                registro &&
-                                typeof registro === "object" &&
-                                (
-                                    registro.temp !== undefined
-                                    ||
-                                    registro.hum !== undefined
-                                )
-                            ) {
+                        Object.keys(registros)
+                        .forEach(
+                            ts => {
 
                                 processarRegistro(
 
-                                    chave,
+                                    ts,
 
-                                    registro,
+                                    registros[ts],
 
                                     periodo,
 
-                                    agora,
-
                                     inicioHoje,
 
-                                    seteDiasAtras
+                                    seteDiasAtras,
+
+                                    inicioMes,
+
+                                    inicioAno
 
                                 );
 
                             }
+                        );
 
-                        }
-                    );
+                    }
+
+
+                    return;
 
                 }
+
+
+                // =================================================
+                // ESTRUTURA LEGADA
+                // =================================================
+
+                Object.keys(dadosDia)
+                .forEach(
+                    chave => {
+
+                        const registro =
+                            dadosDia[chave];
+
+
+                        if (
+                            !registro ||
+                            typeof registro !== "object"
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        if (
+                            registro.temp === undefined
+                            &&
+                            registro.hum === undefined
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        processarRegistro(
+
+                            chave,
+
+                            registro,
+
+                            periodo,
+
+                            inicioHoje,
+
+                            seteDiasAtras,
+
+                            inicioMes,
+
+                            inicioAno
+
+                        );
+
+                    }
+                );
 
             }
         );
@@ -1059,12 +912,8 @@ async function fetchData(periodo) {
         globalData.forEach(
             item => {
 
-                const chave =
-                    `${item.ts}_${item.temp}_${item.hum}`;
-
-
                 mapa.set(
-                    chave,
+                    `${item.ts}_${item.temp}_${item.hum}`,
                     item
                 );
 
@@ -1088,10 +937,6 @@ async function fetchData(periodo) {
         );
 
 
-        // =================================================
-        // SEM DADOS
-        // =================================================
-
         if (
             globalData.length === 0
         ) {
@@ -1102,10 +947,6 @@ async function fetchData(periodo) {
 
         }
 
-
-        // =================================================
-        // RENDERIZAR
-        // =================================================
 
         renderUI();
 
@@ -1129,7 +970,7 @@ async function fetchData(periodo) {
 
                 <br><br>
 
-                ${error.message}
+                ${escapeHTML(error.message)}
 
             </div>
 
@@ -1152,11 +993,13 @@ function processarRegistro(
 
     periodo,
 
-    agora,
-
     inicioHoje,
 
-    seteDiasAtras
+    seteDiasAtras,
+
+    inicioMes,
+
+    inicioAno
 
 ) {
 
@@ -1205,9 +1048,7 @@ function processarRegistro(
     }
 
 
-    // =================================================
-    // CASO O TIMESTAMP VENHA EM MILISSEGUNDOS
-    // =================================================
+    // Milissegundos -> segundos
 
     if (
         timestamp > 100000000000
@@ -1226,9 +1067,7 @@ function processarRegistro(
 
 
     const data =
-        new Date(
-            tsM
-        );
+        new Date(tsM);
 
 
     if (
@@ -1242,71 +1081,45 @@ function processarRegistro(
     }
 
 
-    let incluir =
-        false;
+    let incluir = false;
 
-
-    // =================================================
-    // HOJE
-    // =================================================
 
     if (
         periodo === "diario"
-        &&
-        tsM >= inicioHoje
     ) {
 
-        incluir = true;
+        incluir =
+            tsM >= inicioHoje;
 
     }
 
-
-    // =================================================
-    // ÚLTIMOS 7 DIAS
-    // =================================================
 
     else if (
         periodo === "semanal"
-        &&
-        tsM >= seteDiasAtras
     ) {
 
-        incluir = true;
+        incluir =
+            tsM >= seteDiasAtras;
 
     }
 
-
-    // =================================================
-    // MÊS ATUAL
-    // =================================================
 
     else if (
         periodo === "mensal"
-        &&
-        data.getMonth()
-            === agora.getMonth()
-        &&
-        data.getFullYear()
-            === agora.getFullYear()
     ) {
 
-        incluir = true;
+        incluir =
+            tsM >= inicioMes;
 
     }
 
 
-    // =================================================
-    // ANO ATUAL
-    // =================================================
-
     else if (
         periodo === "anual"
-        &&
-        data.getFullYear()
-            === agora.getFullYear()
     ) {
 
-        incluir = true;
+        incluir =
+            tsM >= inicioAno;
 
     }
 
@@ -1355,7 +1168,7 @@ function mostrarSemDados() {
         "lista"
     ).innerHTML = `
 
-        <p style="text-align:center;padding:40px;">
+        <p class="loading">
 
             Nenhum registro encontrado
             para este período.
@@ -1418,20 +1231,17 @@ function renderUI() {
 
 
             const erroTemp =
-                d.temp > limites.tMax
-                ||
+                d.temp > limites.tMax ||
                 d.temp < limites.tMin;
 
 
             const erroHum =
-                d.hum > limites.hMax
-                ||
+                d.hum > limites.hMax ||
                 d.hum < limites.hMin;
 
 
             const erro =
-                erroTemp ||
-                erroHum;
+                erroTemp || erroHum;
 
 
             const item =
@@ -1448,9 +1258,7 @@ function renderUI() {
 
                 <div>
 
-                    <b>
-                        ${d.hora}
-                    </b>
+                    <b>${d.hora}</b>
 
                 </div>
 
@@ -1479,15 +1287,11 @@ function renderUI() {
                         <span
                             class="${
                                 erroTemp
-                                ?
-                                "valor-critico"
-                                :
-                                ""
+                                ? "valor-critico"
+                                : ""
                             }"
                         >
-
                             ${d.temp.toFixed(1)}°C
-
                         </span>
 
                     </div>
@@ -1509,15 +1313,11 @@ function renderUI() {
                         <span
                             class="${
                                 erroHum
-                                ?
-                                "valor-critico"
-                                :
-                                ""
+                                ? "valor-critico"
+                                : ""
                             }"
                         >
-
                             ${d.hum.toFixed(1)}%
-
                         </span>
 
                     </div>
@@ -1539,21 +1339,11 @@ function renderUI() {
                         <span
                             class="${
                                 erro
-                                ?
-                                "valor-critico"
-                                :
-                                "normal"
+                                ? "valor-critico"
+                                : "normal"
                             }"
                         >
-
-                            ${
-                                erro
-                                ?
-                                "ALERTA"
-                                :
-                                "NORMAL"
-                            }
-
+                            ${erro ? "ALERTA" : "NORMAL"}
                         </span>
 
                     </div>
@@ -1580,21 +1370,25 @@ function renderUI() {
 function renderChart(periodo) {
 
     const dados =
-        [...globalData]
-        .sort(
+        [...globalData].sort(
             (a,b) =>
                 a.ts - b.ts
         );
 
 
-    const ctx =
-        document
-        .getElementById(
+    const canvas =
+        document.getElementById(
             "mainChart"
-        )
-        .getContext(
-            "2d"
         );
+
+
+    if (!canvas) {
+        return;
+    }
+
+
+    const ctx =
+        canvas.getContext("2d");
 
 
     const gradT =
@@ -1654,15 +1448,12 @@ function renderChart(periodo) {
                             d => {
 
                                 if (
-                                    periodo === "diario"
-                                    ||
+                                    periodo === "diario" ||
                                     periodo === "semanal"
                                 ) {
 
                                     return `${
-                                        d.data.split("/")[0]
-                                    }/${
-                                        d.data.split("/")[1]
+                                        d.data.substring(0,5)
                                     } ${d.hora}`;
 
                                 }
@@ -1681,8 +1472,7 @@ function renderChart(periodo) {
 
                             data:
                                 dados.map(
-                                    d =>
-                                        d.temp
+                                    d => d.temp
                                 ),
 
                             borderColor:
@@ -1697,10 +1487,8 @@ function renderChart(periodo) {
 
                             pointRadius:
                                 dados.length > 50
-                                ?
-                                0
-                                :
-                                2,
+                                ? 0
+                                : 2,
 
                             borderWidth:2
 
@@ -1714,8 +1502,7 @@ function renderChart(periodo) {
 
                             data:
                                 dados.map(
-                                    d =>
-                                        d.hum
+                                    d => d.hum
                                 ),
 
                             borderColor:
@@ -1730,10 +1517,8 @@ function renderChart(periodo) {
 
                             pointRadius:
                                 dados.length > 50
-                                ?
-                                0
-                                :
-                                2,
+                                ? 0
+                                : 2,
 
                             borderWidth:2
 
@@ -1834,6 +1619,20 @@ async function exportarPDF() {
     }
 
 
+    if (
+        !window.jspdf ||
+        !window.jspdf.jsPDF
+    ) {
+
+        alert(
+            "Biblioteca PDF não carregada."
+        );
+
+        return;
+
+    }
+
+
     const {
         jsPDF
     } =
@@ -1858,16 +1657,17 @@ async function exportarPDF() {
         .innerText;
 
 
-    btn.disabled =
-        true;
-
-
     const textoOriginal =
         btn.innerText;
 
 
-    const linhasPorPagina =
-        28;
+    btn.disabled = true;
+
+    btn.innerText =
+        "Gerando relatório...";
+
+
+    const linhasPorPagina = 28;
 
 
     const totalPaginas =
@@ -1911,9 +1711,7 @@ async function exportarPDF() {
         );
 
 
-        doc.setFontSize(
-            22
-        );
+        doc.setFontSize(22);
 
 
         doc.text(
@@ -1923,10 +1721,7 @@ async function exportarPDF() {
         );
 
 
-        doc.setFontSize(
-            9
-        );
-
+        doc.setFontSize(9);
 
         doc.setFont(
             "helvetica",
@@ -1941,9 +1736,7 @@ async function exportarPDF() {
         );
 
 
-        doc.setFontSize(
-            8
-        );
+        doc.setFontSize(8);
 
 
         doc.text(
@@ -2050,9 +1843,7 @@ async function exportarPDF() {
         );
 
 
-        doc.setFontSize(
-            9
-        );
+        doc.setFontSize(9);
 
 
         doc.text(
@@ -2091,9 +1882,7 @@ async function exportarPDF() {
     let pagina = 1;
 
 
-    header(
-        pagina
-    );
+    header(pagina);
 
 
     let y =
@@ -2116,14 +1905,9 @@ async function exportarPDF() {
 
             doc.addPage();
 
-
             pagina++;
 
-
-            header(
-                pagina
-            );
-
+            header(pagina);
 
             y =
                 tableHead(55);
@@ -2132,20 +1916,17 @@ async function exportarPDF() {
 
 
         const erroTemp =
-            d.temp > limites.tMax
-            ||
+            d.temp > limites.tMax ||
             d.temp < limites.tMin;
 
 
         const erroHum =
-            d.hum > limites.hMax
-            ||
+            d.hum > limites.hMax ||
             d.hum < limites.hMin;
 
 
         const erro =
-            erroTemp ||
-            erroHum;
+            erroTemp || erroHum;
 
 
         if (erro) {
@@ -2220,38 +2001,20 @@ async function exportarPDF() {
         );
 
 
-        if (erro) {
-
-            doc.setTextColor(
-                225,
-                29,
-                72
-            );
+        doc.setTextColor(
+            erro ? 225 : 16,
+            erro ? 29 : 185,
+            erro ? 72 : 129
+        );
 
 
-            doc.text(
-                "ALERTA",
-                172,
-                y
-            );
-
-        }
-        else {
-
-            doc.setTextColor(
-                16,
-                185,
-                129
-            );
-
-
-            doc.text(
-                "NORMAL",
-                172,
-                y
-            );
-
-        }
+        doc.text(
+            erro
+            ? "ALERTA"
+            : "NORMAL",
+            172,
+            y
+        );
 
 
         y += 8;
@@ -2264,8 +2027,8 @@ async function exportarPDF() {
             btn.innerText =
                 `Gerando... ${
                     Math.round(
-                        (i / globalData.length)
-                        * 100
+                        (i / globalData.length) *
+                        100
                     )
                 }%`;
 
@@ -2308,16 +2071,14 @@ async function exportarPDF() {
             sensorID
         }_${
             aba.replace(
-                / /g,
+                /\s+/g,
                 "_"
             )
         }.pdf`
     );
 
 
-    btn.disabled =
-        false;
-
+    btn.disabled = false;
 
     btn.innerText =
         textoOriginal;
@@ -2380,9 +2141,24 @@ document
 );
 
 
+// =====================================================
+// SEGURANÇA HTML
+// =====================================================
+
+function escapeHTML(text) {
+
+    return String(text)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+}
+
 </script>
 
 </body>
 
 </html>
-
+```
