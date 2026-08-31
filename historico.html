@@ -210,7 +210,7 @@
         sensorConfig: null,
         globalData: [],
         chartInstance: null,
-        limites: { tMin: undefined, tMax: undefined, hMin: undefined, hMax: undefined }
+        limites: { tMin: 18, tMax: 24.5, hMin: 45, hMax: 65 }
     };
 
     if (!firebase.apps.length) {
@@ -266,38 +266,22 @@
 
     async function carregarSensor() {
         try {
-            // Reseta limites para undefined a cada recarga
-            state.limites = { tMin: undefined, tMax: undefined, hMin: undefined, hMax: undefined };
-
             const sensorSnap = await db.ref(`central_sensores/${state.sensorID}`).once("value");
-            
             if (sensorSnap.exists()) {
                 state.sensorConfig = sensorSnap.val();
                 elements.sensorNome.textContent = state.sensorID;
                 elements.sensorLocal.textContent = state.sensorConfig.nome || state.sensorConfig.local || "--";
                 elements.sensorCliente.textContent = state.sensorConfig.clientID || state.sensorConfig.cliente || "--";
-
-                const s = state.sensorConfig;
-
-                // Lê as variações de chaves possíveis no Firebase
-                const parseNum = (val) => (val !== undefined && val !== null && val !== "") ? Number(val) : undefined;
-
-                state.limites.tMin = parseNum(s.tempMin ?? s.tMin);
-                state.limites.tMax = parseNum(s.tempMax ?? s.tMax);
-                state.limites.hMin = parseNum(s.humMin ?? s.hMin ?? s.umidMin);
-                state.limites.hMax = parseNum(s.humMax ?? s.hMax ?? s.umidMax);
             } else {
                 elements.sensorNome.textContent = state.sensorID;
             }
 
-            // Fallback global apenas para propriedades ainda indefinidas
             const configAlertasSnap = await db.ref("config_alertas").once("value");
             if (configAlertasSnap.exists()) {
-                const cfgGlobal = configAlertasSnap.val();
-                if (state.limites.tMin === undefined && cfgGlobal.tMin !== undefined) state.limites.tMin = Number(cfgGlobal.tMin);
-                if (state.limites.tMax === undefined && cfgGlobal.tMax !== undefined) state.limites.tMax = Number(cfgGlobal.tMax);
-                if (state.limites.hMin === undefined && cfgGlobal.hMin !== undefined) state.limites.hMin = Number(cfgGlobal.hMin);
-                if (state.limites.hMax === undefined && cfgGlobal.hMax !== undefined) state.limites.hMax = Number(cfgGlobal.hMax);
+                const cfg = configAlertasSnap.val();
+                ["tMin", "tMax", "hMin", "hMax"].forEach(k => {
+                    if (cfg[k] !== undefined) state.limites[k] = Number(cfg[k]);
+                });
             }
 
             fetchData("diario");
@@ -321,17 +305,12 @@
             const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
             const seteDiasAtras = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
-            let historicoSnap = await db.ref(`historico/${state.sensorID}`).once("value");
+            // Busca restrita estritamente ao nó do ID específico do sensor para prevenir mistura de dados entre os 1000 dispositivos
+            const historicoSnap = await db.ref(`historico/${state.sensorID}`).once("value");
             
             if (!historicoSnap.exists()) {
-                historicoSnap = await db.ref("historico/diario").once("value");
+                return mostrarSemDados();
             }
-
-            if (!historicoSnap.exists()) {
-                historicoSnap = await db.ref("historico").once("value");
-            }
-
-            if (!historicoSnap.exists()) return mostrarSemDados();
 
             const base = historicoSnap.val();
 
@@ -408,14 +387,6 @@
         }
     }
 
-    function checarErro(temp, hum) {
-        const erroTemp = (state.limites.tMax !== undefined && temp > state.limites.tMax) || 
-                         (state.limites.tMin !== undefined && temp < state.limites.tMin);
-        const erroHum = (state.limites.hMax !== undefined && hum > state.limites.hMax) || 
-                        (state.limites.hMin !== undefined && hum < state.limites.hMin);
-        return { erroTemp, erroHum, temErro: erroTemp || erroHum };
-    }
-
     function renderUI() {
         elements.listaHistorico.innerHTML = "";
         let ultimaData = "";
@@ -429,7 +400,9 @@
                 ultimaData = d.data;
             }
 
-            const { erroTemp, erroHum, temErro } = checarErro(d.temp, d.hum);
+            const erroTemp = d.temp > state.limites.tMax || d.temp < state.limites.tMin;
+            const erroHum = d.hum > state.limites.hMax || d.hum < state.limites.hMin;
+            const temErro = erroTemp || erroHum;
 
             const itemDiv = document.createElement("div");
             itemDiv.className = `item ${temErro ? "alerta" : ""}`;
@@ -446,7 +419,7 @@
                     </div>
                     <div>
                         <small>STATUS</small><br>
-                        <span class="${temErro ? "valor-critico" : "normal"}">${temErro ? "ALERTA" : "NORMAL"}</span>
+                        <span class="${temErro ? "valor-critico" : "normal"}">${temErro ? "ALERTA" : "OK"}</span>
                     </div>
                 </div>
             `;
@@ -576,7 +549,8 @@
                 y = desenharTabelaHeader(55);
             }
 
-            const { temErro } = checarErro(item.temp, item.hum);
+            const temErro = item.temp > state.limites.tMax || item.temp < state.limites.tMin || 
+                           item.hum > state.limites.hMax || item.hum < state.limites.hMin;
 
             if (temErro) {
                 doc.setFillColor(255, 241, 242);
