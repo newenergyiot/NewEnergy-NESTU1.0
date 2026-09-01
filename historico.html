@@ -168,7 +168,7 @@
     <div class="header-card">
         <div class="sensor-info">
             <h2 id="sensorNome">Carregando sensor...</h2>
-            <p>Local: <span id="sensorLocal">--</span> | Cliente: <span id="sensorCliente">--</span></p>
+            <p>Local: <span id="sensorLocal">--</span> | Limites: Temp (<span id="lblTMin">--</span> a <span id="lblTMax">--</span>°C) | Umid (<span id="lblHMin">--</span> a <span id="lblHMax">--</span>%)</p>
         </div>
         <div class="actions">
             <button id="btnVoltar" class="btn-secundary">Voltar</button>
@@ -210,7 +210,7 @@
         sensorConfig: null,
         globalData: [],
         chartInstance: null,
-        limites: { tMin: 18, tMax: 24.5, hMin: 45, hMax: 65 }
+        limites: { tMin: 2, tMax: 8, hMin: 40, hMax: 75 } // Padrão seguro caso não venha do banco
     };
 
     if (!firebase.apps.length) {
@@ -224,7 +224,10 @@
         elements = {
             sensorNome: document.getElementById("sensorNome"),
             sensorLocal: document.getElementById("sensorLocal"),
-            sensorCliente: document.getElementById("sensorCliente"),
+            lblTMin: document.getElementById("lblTMin"),
+            lblTMax: document.getElementById("lblTMax"),
+            lblHMin: document.getElementById("lblHMin"),
+            lblHMax: document.getElementById("lblHMax"),
             erroFirebase: document.getElementById("erroFirebase"),
             listaHistorico: document.getElementById("lista-historico"),
             btnPdf: document.getElementById("btnPdf"),
@@ -243,7 +246,7 @@
             return;
         }
 
-        carregarSensor();
+        carregarSensorESuasConfiguracoes();
     });
 
     function setupEventListeners() {
@@ -264,39 +267,36 @@
         }
     }
 
-    async function carregarSensor() {
+    async function carregarSensorESuasConfiguracoes() {
         try {
+            // Busca exclusiva das configurações do sensor selecionado
             const sensorSnap = await db.ref(`central_sensores/${state.sensorID}`).once("value");
+            
             if (sensorSnap.exists()) {
                 state.sensorConfig = sensorSnap.val();
                 elements.sensorNome.textContent = state.sensorID;
-                elements.sensorLocal.textContent = state.sensorConfig.nome || state.sensorConfig.local || "--";
-                elements.sensorCliente.textContent = state.sensorConfig.clientID || state.sensorConfig.cliente || "--";
+                elements.sensorLocal.textContent = state.sensorConfig.nome || state.sensorConfig.local || "Local não definido";
 
+                // Aplica os limites individuais cadastrados para este sensor
                 if (state.sensorConfig.tempMin !== undefined) state.limites.tMin = Number(state.sensorConfig.tempMin);
                 if (state.sensorConfig.tempMax !== undefined) state.limites.tMax = Number(state.sensorConfig.tempMax);
                 if (state.sensorConfig.humMin !== undefined) state.limites.hMin = Number(state.sensorConfig.humMin);
                 if (state.sensorConfig.humMax !== undefined) state.limites.hMax = Number(state.sensorConfig.humMax);
             } else {
                 elements.sensorNome.textContent = state.sensorID;
+                elements.sensorLocal.textContent = "Sensor não cadastrado na central";
             }
 
-            const configAlertasSnap = await db.ref("config_alertas").once("value");
-            if (configAlertasSnap.exists()) {
-                const cfg = configAlertasSnap.val();
-                if (state.sensorConfig?.tempMin === undefined) {
-                    if (cfg.tMin !== undefined) state.limites.tMin = Number(cfg.tMin);
-                    if (cfg.tMax !== undefined) state.limites.tMax = Number(cfg.tMax);
-                }
-                if (state.sensorConfig?.humMin === undefined) {
-                    if (cfg.hMin !== undefined) state.limites.hMin = Number(cfg.hMin);
-                    if (cfg.hMax !== undefined) state.limites.hMax = Number(cfg.hMax);
-                }
-            }
+            // Atualiza os rótulos de limites no cabeçalho
+            elements.lblTMin.textContent = state.limites.tMin;
+            elements.lblTMax.textContent = state.limites.tMax;
+            elements.lblHMin.textContent = state.limites.hMin;
+            elements.lblHMax.textContent = state.limites.hMax;
 
+            // Inicia a busca do histórico respeitando a rota isolada do sensor
             fetchData("diario");
         } catch (error) {
-            console.error("Erro ao carregar dados do sensor:", error);
+            console.error("Erro ao carregar configurações do sensor:", error);
             fetchData("diario");
         }
     }
@@ -308,7 +308,7 @@
     }
 
     async function fetchData(periodo) {
-        elements.listaHistorico.innerHTML = '<p style="text-align:center;padding:40px">Sincronizando leituras...</p>';
+        elements.listaHistorico.innerHTML = '<p style="text-align:center;padding:40px">Sincronizando leituras do sensor...</p>';
         state.globalData = [];
 
         if (state.chartInstance) {
@@ -321,6 +321,7 @@
             const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
             const seteDiasAtras = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
+            // ISOLAMENTO DE HISTÓRICO: Busca apenas na pasta exclusiva deste sensor
             const historicoSnap = await db.ref(`historico/${state.sensorID}`).once("value");
             
             if (!historicoSnap.exists()) {
@@ -332,16 +333,22 @@
             function varrerEProcessar(obj) {
                 if (!obj || typeof obj !== "object") return;
 
-                if (obj.temp !== undefined || obj.hum !== undefined || obj.temperatura !== undefined) {
-                    processarRegistro(obj.timestamp || obj.ts || Date.now(), obj, periodo, agora, inicioHoje, seteDiasAtras);
+                if (obj.temp !== undefined || obj.hum !== undefined || obj.t !== undefined) {
+                    const temperatura = obj.temp !== undefined ? obj.temp : obj.t;
+                    const umidade = obj.hum !== undefined ? obj.hum : obj.h;
+                    const tsRegistro = obj.timestamp || obj.ts || Date.now();
+                    
+                    processarRegistro(tsRegistro, { temp: temperatura, hum: umidade }, periodo, agora, inicioHoje, seteDiasAtras);
                     return;
                 }
 
                 Object.keys(obj).forEach(chave => {
                     const subItem = obj[chave];
                     if (subItem && typeof subItem === "object") {
-                        if (subItem.temp !== undefined || subItem.hum !== undefined || subItem.temperatura !== undefined) {
-                            processarRegistro(chave, subItem, periodo, agora, inicioHoje, seteDiasAtras);
+                        if (subItem.temp !== undefined || subItem.hum !== undefined || subItem.t !== undefined) {
+                            const temperatura = subItem.temp !== undefined ? subItem.temp : subItem.t;
+                            const umidade = subItem.hum !== undefined ? subItem.hum : subItem.h;
+                            processarRegistro(chave, { temp: temperatura, hum: umidade }, periodo, agora, inicioHoje, seteDiasAtras);
                         } else {
                             varrerEProcessar(subItem);
                         }
@@ -362,7 +369,7 @@
         } catch (error) {
             console.error(error);
             elements.listaHistorico.innerHTML = `
-                <div class="erro"><b>Erro ao carregar histórico de leituras.</b><br><br>${escapeHtml(error.message)}</div>
+                <div class="erro"><b>Erro ao carregar histórico do sensor.</b><br><br>${escapeHtml(error.message)}</div>
             `;
         }
     }
@@ -370,16 +377,11 @@
     function processarRegistro(keyOrTs, r, periodo, agora, inicioHoje, seteDiasAtras) {
         if (!r || typeof r !== "object") return;
 
-        const idRegistro = r.sensor || r.sensorID || r.id;
-        if (idRegistro && idRegistro !== state.sensorID) return;
+        const temp = Number(r.temp);
+        const hum = Number(r.hum);
 
-        const temp = Number(r.temp !== undefined ? r.temp : r.temperatura);
-        const hum = Number(r.hum !== undefined ? r.hum : r.umidade);
-
-        let timestamp = Number(r.timestamp || r.ts || keyOrTs);
-
-        if (!Number.isFinite(temp) || !Number.isFinite(hum) || !Number.isFinite(timestamp)) return;
-
+        let timestamp = Number(keyOrTs);
+        if (!Number.isFinite(timestamp)) timestamp = Number(r.timestamp || r.ts || Date.now());
         if (timestamp < 1e11) timestamp = timestamp * 1000;
 
         const dataObj = new Date(timestamp);
@@ -415,6 +417,7 @@
                 ultimaData = d.data;
             }
 
+            // Utiliza as regras e limites individuais deste sensor
             const { erroTemp, erroHum, temErro } = checarErro(d.temp, d.hum);
 
             const itemDiv = document.createElement("div");
@@ -525,7 +528,7 @@
             doc.setFont("helvetica", "normal");
             doc.text("RELATÓRIO DE MONITORAMENTO", 15, 23);
             doc.setFontSize(8);
-            doc.text(`SENSOR: ${state.sensorID}`, 15, 29);
+            doc.text(`SENSOR: ${state.sensorID} (${elements.sensorLocal.textContent})`, 15, 29);
             doc.text(`FILTRO: ${activeTab.toUpperCase()}`, 195, 15, { align: "right" });
             doc.text(`EMISSÃO: ${new Date().toLocaleDateString("pt-BR")}`, 195, 21, { align: "right" });
             doc.text(`PÁGINA: ${pagina} / ${totalPaginas}`, 195, 27, { align: "right" });
@@ -541,12 +544,7 @@
             doc.setFont("helvetica", "bold");
             doc.setFontSize(7.5);
             
-            const tMinStr = state.limites.tMin !== null ? `${state.limites.tMin}°C` : "--";
-            const tMaxStr = state.limites.tMax !== null ? `${state.limites.tMax}°C` : "--";
-            const hMinStr = state.limites.hMin !== null ? `${state.limites.hMin}%` : "--";
-            const hMaxStr = state.limites.hMax !== null ? `${state.limites.hMax}%` : "--";
-
-            doc.text(`CONFIGURAÇÃO APLICADA NESSA EMISSÃO -> Temp: ${tMinStr} a ${tMaxStr}  |  Umidade: ${hMinStr} a ${hMaxStr}`, 20, 49.5);
+            doc.text(`LIMITES DESTE SENSOR -> Temp: ${state.limites.tMin}°C a ${state.limites.tMax}°C  |  Umidade: ${state.limites.hMin}% a ${state.limites.hMax}%`, 20, 49.5);
         };
 
         const desenharTabelaHeader = (yPos) => {
@@ -620,8 +618,7 @@
     }
 
     function voltarPainel() {
-        const idParam = state.sensorID ? encodeURIComponent(state.sensorID) : "";
-        window.location.href = `admin.html?id=${idParam}`;
+        window.location.href = `index.html`;
     }
 
     function escapeHtml(string) {
