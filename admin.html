@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js"></script>
 </head>
 
 <body class="bg-slate-50 font-sans min-h-screen">
@@ -19,9 +20,12 @@
                 <h1 class="text-2xl font-bold text-slate-800">CENTRAL NEWENERGY</h1>
                 <p class="text-sm text-blue-600">Monitoramento Geral</p>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
                 <span id="status" class="text-sm text-slate-500">● Conectando...</span>
-                <button onclick="abrirModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl">
+                <button onclick="solicitarPermissaoPush()" id="btnPush" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1">
+                    🔔 Ativar Alertas Push
+                </button>
+                <button onclick="abrirModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
                     + Novo Sensor
                 </button>
             </div>
@@ -45,8 +49,6 @@
             </div>
 
             <form onsubmit="salvar(event)" class="space-y-4">
-                
-                <!-- DADOS BÁSICOS -->
                 <div class="space-y-2">
                     <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Informações Principais</span>
                     <input id="id" required placeholder="SENSOR_01" class="campo">
@@ -54,7 +56,6 @@
                     <input id="cliente" required placeholder="Nome do Cliente" class="campo">
                 </div>
 
-                <!-- PARÂMETROS DE ALERTA -->
                 <div class="space-y-2 pt-2 border-t border-slate-100">
                     <span class="text-xs font-bold text-amber-600 uppercase tracking-wider">Limites de Alerta & Notificação</span>
                     <div class="grid grid-cols-2 gap-2">
@@ -83,7 +84,6 @@
                     </div>
                 </div>
 
-                <!-- OPERAÇÃO E FREQUÊNCIA -->
                 <div class="space-y-2 pt-2 border-t border-slate-100">
                     <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Parâmetros Operacionais</span>
                     <div class="grid grid-cols-2 gap-2">
@@ -98,7 +98,6 @@
                     </div>
                 </div>
 
-                <!-- ROTAS DO BANCO DE DADOS -->
                 <div class="space-y-2 pt-2 border-t border-slate-100">
                     <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Mapeamento Firebase</span>
                     <div>
@@ -139,7 +138,6 @@
             font-size: 0.875rem;
             outline: none;
         }
-
         .campo:focus {
             border-color: #3b82f6;
             box-shadow: 0 0 0 2px #bfdbfe;
@@ -147,7 +145,6 @@
     </style>
 
     <script>
-        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyAHF7mVM9Yv71cnqG-C1_P7MfEj1hc6_Bs",
             authDomain: "nestu-02.firebaseapp.com",
@@ -160,11 +157,13 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const messaging = firebase.messaging();
 
-        // VARIÁVEIS
         let editando = false;
         let sensorEditando = null;
         let listeners = {};
+        // Controle para evitar spam de alertas repetidos a cada leitura
+        let estadosAlertaEnviados = {}; 
 
         function limparListeners() {
             Object.keys(listeners).forEach(rota => {
@@ -173,7 +172,46 @@
             listeners = {};
         }
 
-        // CARREGAR SENSORES
+        // REGISTRAR PWA SERVICE WORKER
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registrado com sucesso!', reg))
+                    .catch(err => console.log('Falha ao registrar Service Worker:', err));
+            });
+        }
+
+        // SOLICITAR PERMISSÃO DE PUSH NOTIFICATION
+        async function solicitarPermissaoPush() {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    alert('Notificações Push ativadas com sucesso neste dispositivo!');
+                    document.getElementById('btnPush').classList.remove('bg-amber-500', 'hover:bg-amber-600');
+                    document.getElementById('btnPush').classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                    document.getElementById('btnPush').textContent = '🔔 Push Ativo';
+                } else {
+                    alert('Permissão de notificação negada pelo usuário.');
+                }
+            } catch (error) {
+                console.error("Erro ao pedir permissão de push:", error);
+            }
+        }
+
+        // DISPARAR NOTIFICAÇÃO NATIVA NO NAVEGADOR / CELULAR
+        function dispararNotificacaoLocal(titulo, mensagem) {
+            if (Notification.permission === 'granted') {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(titulo, {
+                        body: mensagem,
+                        icon: '/icon.png',
+                        vibrate: [200, 100, 200]
+                    });
+                });
+            }
+        }
+
+        // CARREGAR SENSORES (Suporta de 1 até quantos sensores houver cadastrados)
         db.ref("central_sensores").on("value", snapshot => {
             limparListeners();
             const container = document.getElementById("sensores");
@@ -195,7 +233,6 @@
             document.getElementById("status").textContent = "● Erro de conexão";
         });
 
-        // CRIAR CARD
         function criarCard(id, sensor) {
             const container = document.getElementById("sensores");
             let card = document.getElementById(`card-${id}`);
@@ -222,8 +259,8 @@
                         <p class="text-xs text-slate-500">Cliente: ${escapeHtml(sensor.clientID || "-")}</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="editar('${escapeAttr(id)}')" title="Painel de Serviço / Configurações" class="bg-slate-100 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition">✏️</button>
-                        <button onclick="excluir('${escapeAttr(id)}')" title="Excluir Sensor" class="bg-slate-100 px-3 py-1.5 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition">🗑️</button>
+                        <button onclick="editar('${escapeAttr(id)}')" title="Configurações" class="bg-slate-100 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition">✏️</button>
+                        <button onclick="excluir('${escapeAttr(id)}')" title="Excluir" class="bg-slate-100 px-3 py-1.5 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition">🗑️</button>
                     </div>
                 </div>
 
@@ -264,7 +301,7 @@
                     const elemento = document.getElementById(`temp-${id}`);
                     if (elemento && Number.isFinite(valor)) {
                         elemento.textContent = valor.toFixed(1) + " °C";
-                        verificarAlertaCaixas(id, sensor);
+                        verificarAlertaCaixas(id, sensor, valor, null);
                     }
                 });
             }
@@ -274,7 +311,7 @@
                     const elemento = document.getElementById(`hum-${id}`);
                     if (elemento && Number.isFinite(valor)) {
                         elemento.textContent = valor.toFixed(1) + " %";
-                        verificarAlertaCaixas(id, sensor);
+                        verificarAlertaCaixas(id, sensor, null, valor);
                     }
                 });
             }
@@ -286,41 +323,69 @@
             }
         }
 
-        // VERIFICAR ALERTA ESPECÍFICO POR CAIXA (TEMPERATURA OU UMIDADE)
-        function verificarAlertaCaixas(id, sensor) {
+        // VERIFICAR ALERTA E DISPARAR PUSH SE SAIR DA FAIXA
+        function verificarAlertaCaixas(id, sensor, tempForcada = null, humForcada = null) {
             const tempEl = document.getElementById(`temp-${id}`);
             const humEl = document.getElementById(`hum-${id}`);
             const boxTemp = document.getElementById(`box-temp-${id}`);
             const boxHum = document.getElementById(`box-hum-${id}`);
 
+            let nomeSensor = sensor.nome || id;
+
+            // Checar Temperatura
             if (tempEl && boxTemp) {
-                const tempVal = parseFloat(tempEl.textContent);
+                const tempVal = tempForcada !== null ? tempForcada : parseFloat(tempEl.textContent);
                 if (!isNaN(tempVal)) {
                     const abaixoMin = sensor.tempMin !== undefined && sensor.tempMin !== null && tempVal < sensor.tempMin;
                     const acimaMax = sensor.tempMax !== undefined && sensor.tempMax !== null && tempVal > sensor.tempMax;
+                    
+                    const chaveAlertaTemp = `${id}_temp`;
+
                     if (abaixoMin || acimaMax) {
                         boxTemp.className = "bg-[#fff1f2] rounded-xl p-3 text-center border border-rose-300 transition-colors duration-300";
+                        
+                        // Dispara push apenas se já não tiver disparado recentemente para o mesmo estado crítico
+                        if (!estadosAlertaEnviados[chaveAlertaTemp]) {
+                            estadosAlertaEnviados[chaveAlertaTemp] = true;
+                            dispararNotificacaoLocal(
+                                `🚨 Alerta de Temperatura: ${nomeSensor}`,
+                                `O sensor ${id} registrou ${tempVal.toFixed(1)}°C (Fora da faixa permitida!).`
+                            );
+                        }
                     } else {
                         boxTemp.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
+                        estadosAlertaEnviados[chaveAlertaTemp] = false; // Reseta quando normalizar
                     }
                 }
             }
 
+            // Checar Umidade
             if (humEl && boxHum) {
-                const humVal = parseFloat(humEl.textContent);
+                const humVal = humForcada !== null ? humForcada : parseFloat(humEl.textContent);
                 if (!isNaN(humVal)) {
                     const abaixoMin = sensor.humMin !== undefined && sensor.humMin !== null && humVal < sensor.humMin;
                     const acimaMax = sensor.humMax !== undefined && sensor.humMax !== null && humVal > sensor.humMax;
+                    
+                    const chaveAlertaHum = `${id}_hum`;
+
                     if (abaixoMin || acimaMax) {
                         boxHum.className = "bg-[#fff1f2] rounded-xl p-3 text-center border border-rose-300 transition-colors duration-300";
+                        
+                        if (!estadosAlertaEnviados[chaveAlertaHum]) {
+                            estadosAlertaEnviados[chaveAlertaHum] = true;
+                            dispararNotificacaoLocal(
+                                `🚨 Alerta de Umidade: ${nomeSensor}`,
+                                `O sensor ${id} registrou ${humVal.toFixed(1)}% de umidade (Fora da faixa!).`
+                            );
+                        }
                     } else {
                         boxHum.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
+                        estadosAlertaEnviados[chaveAlertaHum] = false;
                     }
                 }
             }
         }
 
-        // OUVIR ROTA
         function ouvirRota(rota, callback) {
             if (!rota) return;
             const rotaLimpa = normalizarRota(rota);
@@ -341,10 +406,8 @@
             return rota;
         }
 
-        // ONLINE / OFFLINE
         function atualizarOnline(id, timestamp) {
             if (!Number.isFinite(Number(timestamp))) return;
-
             let ts = Number(timestamp);
             if (ts > 100000000000) ts = Math.floor(ts / 1000);
 
@@ -369,7 +432,6 @@
             }
         }
 
-        // ABRIR MODAL
         function abrirModal() {
             editando = false;
             sensorEditando = null;
@@ -380,7 +442,6 @@
             document.getElementById("modal").classList.remove("hidden");
         }
 
-        // SUGERIR ROTAS AUTOMÁTICAS
         function sugerirRotas() {
             if (editando) return;
             const valor = document.getElementById("id").value.trim().toUpperCase();
@@ -403,7 +464,6 @@
             document.getElementById("modal").classList.add("hidden");
         }
 
-        // EDITAR / PAINEL DE SERVIÇO INDIVIDUAL
         function editar(id) {
             db.ref(`central_sensores/${id}`).once("value").then(snapshot => {
                 if (!snapshot.exists()) {
@@ -441,7 +501,6 @@
             });
         }
 
-        // SALVAR DADOS
         function salvar(event) {
             event.preventDefault();
             const id = document.getElementById("id").value.trim().toUpperCase().replace(/\s+/g, "_");
@@ -470,7 +529,6 @@
             });
         }
 
-        // EXCLUIR
         function excluir(id) {
             if (!confirm(`Deseja excluir permanentemente o ${id}?`)) return;
 
