@@ -179,6 +179,18 @@
             });
         }
 
+        // Verifica permissão e mantém o botão verde automaticamente ao carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            if (Notification.permission === 'granted') {
+                const btnPush = document.getElementById('btnPush');
+                if (btnPush) {
+                    btnPush.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+                    btnPush.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                    btnPush.textContent = '🔔 Push Ativo';
+                }
+            }
+        });
+
         async function solicitarPermissaoPush() {
             try {
                 const permission = await Notification.requestPermission();
