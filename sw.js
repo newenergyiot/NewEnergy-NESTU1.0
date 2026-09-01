@@ -13,8 +13,6 @@ self.addEventListener('push', function(event) {
     const titulo = dados.title || "Alerta NewEnergy";
     const opcoes = {
         body: dados.body || "Atenção: Sensor fora da faixa ideal de temperatura!",
-        icon: "/icon.png",
-        badge: "/badge.png",
         vibrate: [200, 100, 200],
         data: { url: dados.url || "/" }
     };
@@ -31,7 +29,6 @@ self.addEventListener('notificationclick', function(event) {
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
-            // Procura se já existe uma aba aberta do painel para focar nela
             for (let i = 0; i < windowClients.length; i++) {
                 const client = windowClients[i];
                 if (client.url.includes(self.location.origin) && 'focus' in client) {
@@ -39,7 +36,6 @@ self.addEventListener('notificationclick', function(event) {
                     return client.focus();
                 }
             }
-            // Se nenhuma aba estiver aberta, abre uma nova
             if (clients.openWindow) {
                 return clients.openWindow(urlParaAbrir);
             }
