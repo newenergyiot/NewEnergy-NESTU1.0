@@ -1,44 +1,24 @@
-// sw.js - Service Worker para Web Push (NewEnergy)
+importScripts('https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js');
 
-self.addEventListener('push', function(event) {
-    if (!event.data) return;
-    
-    let dados = {};
-    try {
-        dados = event.data.json();
-    } catch (e) {
-        dados = { title: "Alerta NewEnergy", body: event.data.text() };
-    }
-
-    const titulo = dados.title || "Alerta NewEnergy";
-    const opcoes = {
-        body: dados.body || "Atenção: Sensor fora da faixa ideal de temperatura!",
-        vibrate: [200, 100, 200],
-        data: { url: dados.url || "/" }
-    };
-
-    event.waitUntil(
-        self.registration.showNotification(titulo, opcoes)
-    );
+firebase.initializeApp({
+  apiKey: "AIzaSyAHF7mVM9Yv71cnqG-C1_P7MfEj1hc6_Bs",
+  authDomain: "nestu-02.firebaseapp.com",
+  databaseURL: "https://nestu-02-default-rtdb.firebaseio.com",
+  projectId: "nestu-02",
+  storageBucket: "nestu-02.firebasestorage.app",
+  messagingSenderId: "440418278168",
+  appId: "1:440418278168:web:15c519eb00200a33435c6d"
 });
 
-self.addEventListener('notificationclick', function(event) {
-    event.notification.close();
+const messaging = firebase.messaging();
 
-    const urlParaAbrir = event.notification.data.url || "/";
-
-    event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windowClients) {
-            for (let i = 0; i < windowClients.length; i++) {
-                const client = windowClients[i];
-                if (client.url.includes(self.location.origin) && 'focus' in client) {
-                    client.navigate(urlParaAbrir);
-                    return client.focus();
-                }
-            }
-            if (clients.openWindow) {
-                return clients.openWindow(urlParaAbrir);
-            }
-        })
-    );
+messaging.onBackgroundMessage((payload) => {
+    const titulo = payload.notification.title || "Alerta NewEnergy";
+    const opcoes = {
+        body: payload.notification.body,
+        icon: "./icon.png",
+        vibrate: [200, 100, 200]
+    };
+    self.registration.showNotification(titulo, opcoes);
 });
