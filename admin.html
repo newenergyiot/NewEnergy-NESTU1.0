@@ -173,7 +173,6 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // CORRIGIDO AQUI: Caminho atualizado para incluir o repositório do GitHub Pages
                 navigator.serviceWorker.register('/NewEnergy-NESTU1.0/sw.js')
                     .then(reg => console.log('Service Worker registrado com sucesso!', reg))
                     .catch(err => console.log('Falha ao registrar Service Worker:', err));
@@ -202,7 +201,7 @@
                 navigator.serviceWorker.ready.then(registration => {
                     registration.showNotification(titulo, {
                         body: mensagem,
-                        icon: '/icon.png',
+                        icon: '/NewEnergy-NESTU1.0/icon.png',
                         vibrate: [200, 100, 200]
                     });
                 });
