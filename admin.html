@@ -201,7 +201,7 @@
             let card = document.getElementById(`card-${id}`);
             
             if (card) {
-                verificarAlertaCard(id, sensor);
+                verificarAlertaCaixas(id, sensor);
                 return;
             }
 
@@ -211,6 +211,8 @@
 
             const tempMin = sensor.tempMin !== undefined ? sensor.tempMin + "°C" : "--";
             const tempMax = sensor.tempMax !== undefined ? sensor.tempMax + "°C" : "--";
+            const humMin = sensor.humMin !== undefined ? sensor.humMin + "%" : "--";
+            const humMax = sensor.humMax !== undefined ? sensor.humMax + "%" : "--";
 
             card.innerHTML = `
                 <div class="flex justify-between items-start">
@@ -226,18 +228,21 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 mt-4">
-                    <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+                    <div id="box-temp-${escapeAttr(id)}" class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300">
                         <p class="text-xs text-slate-500">Temperatura</p>
                         <strong id="temp-${escapeAttr(id)}" class="text-2xl text-slate-800">-- °C</strong>
                     </div>
-                    <div class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+                    <div id="box-hum-${escapeAttr(id)}" class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300">
                         <p class="text-xs text-slate-500">Umidade</p>
                         <strong id="hum-${escapeAttr(id)}" class="text-2xl text-slate-800">-- %</strong>
                     </div>
                 </div>
 
                 <div class="mt-3 px-3 py-2 bg-slate-50 rounded-lg flex justify-between text-xs text-slate-500">
-                    <span>Faixa Ideal: <strong>${tempMin}</strong> a <strong>${tempMax}</strong></span>
+                    <span>Faixa Ideal Temp: <strong>${tempMin}</strong> a <strong>${tempMax}</strong></span>
+                </div>
+                <div class="mt-2 px-3 py-2 bg-slate-50 rounded-lg flex justify-between text-xs text-slate-500">
+                    <span>Faixa Ideal Umid: <strong>${humMin}</strong> a <strong>${humMax}</strong></span>
                     <span>Intervalo: <strong>${sensor.freqRegistro || 60}s</strong></span>
                 </div>
 
@@ -252,14 +257,14 @@
             `;
             container.appendChild(card);
             
-            verificarAlertaCard(id, sensor);
+            verificarAlertaCaixas(id, sensor);
 
             if (sensor.rotaTemp) {
                 ouvirRota(sensor.rotaTemp, valor => {
                     const elemento = document.getElementById(`temp-${id}`);
                     if (elemento && Number.isFinite(valor)) {
                         elemento.textContent = valor.toFixed(1) + " °C";
-                        verificarAlertaCard(id, sensor);
+                        verificarAlertaCaixas(id, sensor);
                     }
                 });
             }
@@ -269,7 +274,7 @@
                     const elemento = document.getElementById(`hum-${id}`);
                     if (elemento && Number.isFinite(valor)) {
                         elemento.textContent = valor.toFixed(1) + " %";
-                        verificarAlertaCard(id, sensor);
+                        verificarAlertaCaixas(id, sensor);
                     }
                 });
             }
@@ -281,39 +286,37 @@
             }
         }
 
-        // FUNÇÃO DE VALIDAÇÃO E ALTERAÇÃO DE COR DO CARD
-        function verificarAlertaCard(id, sensor) {
-            const card = document.getElementById(`card-${id}`);
-            if (!card) return;
-
+        // VERIFICAR ALERTA ESPECÍFICO POR CAIXA (TEMPERATURA OU UMIDADE)
+        function verificarAlertaCaixas(id, sensor) {
             const tempEl = document.getElementById(`temp-${id}`);
             const humEl = document.getElementById(`hum-${id}`);
+            const boxTemp = document.getElementById(`box-temp-${id}`);
+            const boxHum = document.getElementById(`box-hum-${id}`);
 
-            if (!tempEl || !humEl) return;
-
-            const tempVal = parseFloat(tempEl.textContent);
-            const humVal = parseFloat(humEl.textContent);
-
-            let emAlerta = false;
-
-            if (!isNaN(tempVal)) {
-                if ((sensor.tempMin !== undefined && sensor.tempMin !== null && tempVal < sensor.tempMin) ||
-                    (sensor.tempMax !== undefined && sensor.tempMax !== null && tempVal > sensor.tempMax)) {
-                    emAlerta = true;
+            if (tempEl && boxTemp) {
+                const tempVal = parseFloat(tempEl.textContent);
+                if (!isNaN(tempVal)) {
+                    const abaixoMin = sensor.tempMin !== undefined && sensor.tempMin !== null && tempVal < sensor.tempMin;
+                    const acimaMax = sensor.tempMax !== undefined && sensor.tempMax !== null && tempVal > sensor.tempMax;
+                    if (abaixoMin || acimaMax) {
+                        boxTemp.className = "bg-[#fff1f2] rounded-xl p-3 text-center border border-rose-300 transition-colors duration-300";
+                    } else {
+                        boxTemp.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
+                    }
                 }
             }
 
-            if (!isNaN(humVal)) {
-                if ((sensor.humMin !== undefined && sensor.humMin !== null && humVal < sensor.humMin) ||
-                    (sensor.humMax !== undefined && sensor.humMax !== null && humVal > sensor.humMax)) {
-                    emAlerta = true;
+            if (humEl && boxHum) {
+                const humVal = parseFloat(humEl.textContent);
+                if (!isNaN(humVal)) {
+                    const abaixoMin = sensor.humMin !== undefined && sensor.humMin !== null && humVal < sensor.humMin;
+                    const acimaMax = sensor.humMax !== undefined && sensor.humMax !== null && humVal > sensor.humMax;
+                    if (abaixoMin || acimaMax) {
+                        boxHum.className = "bg-[#fff1f2] rounded-xl p-3 text-center border border-rose-300 transition-colors duration-300";
+                    } else {
+                        boxHum.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
+                    }
                 }
-            }
-
-            if (emAlerta) {
-                card.className = "bg-[#fff1f2] rounded-2xl border border-rose-300 shadow-sm p-5 transition-colors duration-300";
-            } else {
-                card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm p-5 transition-colors duration-300";
             }
         }
 
