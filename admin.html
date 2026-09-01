@@ -162,7 +162,6 @@
         let editando = false;
         let sensorEditando = null;
         let listeners = {};
-        // Controle para evitar spam de alertas repetidos a cada leitura
         let estadosAlertaEnviados = {}; 
 
         function limparListeners() {
@@ -172,7 +171,6 @@
             listeners = {};
         }
 
-        // REGISTRAR PWA SERVICE WORKER
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
@@ -181,15 +179,15 @@
             });
         }
 
-        // SOLICITAR PERMISSÃO DE PUSH NOTIFICATION
         async function solicitarPermissaoPush() {
             try {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
                     alert('Notificações Push ativadas com sucesso neste dispositivo!');
-                    document.getElementById('btnPush').classList.remove('bg-amber-500', 'hover:bg-amber-600');
-                    document.getElementById('btnPush').classList.add('bg-emerald-600', 'hover:bg-emerald-700');
-                    document.getElementById('btnPush').textContent = '🔔 Push Ativo';
+                    const btnPush = document.getElementById('btnPush');
+                    btnPush.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+                    btnPush.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                    btnPush.textContent = '🔔 Push Ativo';
                 } else {
                     alert('Permissão de notificação negada pelo usuário.');
                 }
@@ -198,7 +196,6 @@
             }
         }
 
-        // DISPARAR NOTIFICAÇÃO NATIVA NO NAVEGADOR / CELULAR
         function dispararNotificacaoLocal(titulo, mensagem) {
             if (Notification.permission === 'granted') {
                 navigator.serviceWorker.ready.then(registration => {
@@ -211,7 +208,6 @@
             }
         }
 
-        // CARREGAR SENSORES (Suporta de 1 até quantos sensores houver cadastrados)
         db.ref("central_sensores").on("value", snapshot => {
             limparListeners();
             const container = document.getElementById("sensores");
@@ -246,10 +242,10 @@
             card.id = `card-${id}`;
             card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm p-5 transition-colors duration-300";
 
-            const tempMin = sensor.tempMin !== undefined ? sensor.tempMin + "°C" : "--";
-            const tempMax = sensor.tempMax !== undefined ? sensor.tempMax + "°C" : "--";
-            const humMin = sensor.humMin !== undefined ? sensor.humMin + "%" : "--";
-            const humMax = sensor.humMax !== undefined ? sensor.humMax + "%" : "--";
+            const tempMin = sensor.tempMin !== undefined && sensor.tempMin !== null ? sensor.tempMin + "°C" : "--";
+            const tempMax = sensor.tempMax !== undefined && sensor.tempMax !== null ? sensor.tempMax + "°C" : "--";
+            const humMin = sensor.humMin !== undefined && sensor.humMin !== null ? sensor.humMin + "%" : "--";
+            const humMax = sensor.humMax !== undefined && sensor.humMax !== null ? sensor.humMax + "%" : "--";
 
             card.innerHTML = `
                 <div class="flex justify-between items-start">
@@ -323,7 +319,6 @@
             }
         }
 
-        // VERIFICAR ALERTA E DISPARAR PUSH SE SAIR DA FAIXA
         function verificarAlertaCaixas(id, sensor, tempForcada = null, humForcada = null) {
             const tempEl = document.getElementById(`temp-${id}`);
             const humEl = document.getElementById(`hum-${id}`);
@@ -332,7 +327,6 @@
 
             let nomeSensor = sensor.nome || id;
 
-            // Checar Temperatura
             if (tempEl && boxTemp) {
                 const tempVal = tempForcada !== null ? tempForcada : parseFloat(tempEl.textContent);
                 if (!isNaN(tempVal)) {
@@ -344,7 +338,6 @@
                     if (abaixoMin || acimaMax) {
                         boxTemp.className = "bg-[#fff1f2] rounded-xl p-3 text-center border border-rose-300 transition-colors duration-300";
                         
-                        // Dispara push apenas se já não tiver disparado recentemente para o mesmo estado crítico
                         if (!estadosAlertaEnviados[chaveAlertaTemp]) {
                             estadosAlertaEnviados[chaveAlertaTemp] = true;
                             dispararNotificacaoLocal(
@@ -354,12 +347,11 @@
                         }
                     } else {
                         boxTemp.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
-                        estadosAlertaEnviados[chaveAlertaTemp] = false; // Reseta quando normalizar
+                        estadosAlertaEnviados[chaveAlertaTemp] = false;
                     }
                 }
             }
 
-            // Checar Umidade
             if (humEl && boxHum) {
                 const humVal = humForcada !== null ? humForcada : parseFloat(humEl.textContent);
                 if (!isNaN(humVal)) {
@@ -437,8 +429,9 @@
             sensorEditando = null;
             document.getElementById("titulo").textContent = "Novo Sensor";
             document.querySelector("form").reset();
-            document.getElementById("id").disabled = false;
-            document.getElementById("id").oninput = sugerirRotas;
+            const campoId = document.getElementById("id");
+            campoId.disabled = false;
+            campoId.oninput = sugerirRotas;
             document.getElementById("modal").classList.remove("hidden");
         }
 
@@ -483,10 +476,10 @@
 
                 document.getElementById("nome").value = s.nome || "";
                 document.getElementById("cliente").value = s.clientID || "";
-                document.getElementById("tempMin").value = s.tempMin !== undefined ? s.tempMin : "";
-                document.getElementById("tempMax").value = s.tempMax !== undefined ? s.tempMax : "";
-                document.getElementById("humMin").value = s.humMin !== undefined ? s.humMin : "";
-                document.getElementById("humMax").value = s.humMax !== undefined ? s.humMax : "";
+                document.getElementById("tempMin").value = s.tempMin !== undefined && s.tempMin !== null ? s.tempMin : "";
+                document.getElementById("tempMax").value = s.tempMax !== undefined && s.tempMax !== null ? s.tempMax : "";
+                document.getElementById("humMin").value = s.humMin !== undefined && s.humMin !== null ? s.humMin : "";
+                document.getElementById("humMax").value = s.humMax !== undefined && s.humMax !== null ? s.humMax : "";
                 document.getElementById("emailAlerta").value = s.emailAlerta || "";
                 document.getElementById("freqRegistro").value = s.freqRegistro || "";
                 document.getElementById("intervaloAlerta").value = s.intervaloAlerta || "";
