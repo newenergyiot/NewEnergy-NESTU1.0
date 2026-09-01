@@ -198,14 +198,19 @@
         // CRIAR CARD
         function criarCard(id, sensor) {
             const container = document.getElementById("sensores");
-            const card = document.createElement("div");
+            let card = document.getElementById(`card-${id}`);
+            
+            if (card) {
+                verificarAlertaCard(id, sensor);
+                return;
+            }
+
+            card = document.createElement("div");
             card.id = `card-${id}`;
-            card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm p-5";
+            card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm p-5 transition-colors duration-300";
 
             const tempMin = sensor.tempMin !== undefined ? sensor.tempMin + "°C" : "--";
             const tempMax = sensor.tempMax !== undefined ? sensor.tempMax + "°C" : "--";
-            const humMin = sensor.humMin !== undefined ? sensor.humMin + "%" : "--";
-            const humMax = sensor.humMax !== undefined ? sensor.humMax + "%" : "--";
 
             card.innerHTML = `
                 <div class="flex justify-between items-start">
@@ -232,10 +237,7 @@
                 </div>
 
                 <div class="mt-3 px-3 py-2 bg-slate-50 rounded-lg flex justify-between text-xs text-slate-500">
-                    <span>Faixa Ideal Temp: <strong>${tempMin}</strong> a <strong>${tempMax}</strong></span>
-                </div>
-                <div class="mt-2 px-3 py-2 bg-slate-50 rounded-lg flex justify-between text-xs text-slate-500">
-                    <span>Faixa Ideal Umid: <strong>${humMin}</strong> a <strong>${humMax}</strong></span>
+                    <span>Faixa Ideal: <strong>${tempMin}</strong> a <strong>${tempMax}</strong></span>
                     <span>Intervalo: <strong>${sensor.freqRegistro || 60}s</strong></span>
                 </div>
 
@@ -248,14 +250,16 @@
                     Ver Histórico
                 </a>
             `;
-
             container.appendChild(card);
+            
+            verificarAlertaCard(id, sensor);
 
             if (sensor.rotaTemp) {
                 ouvirRota(sensor.rotaTemp, valor => {
                     const elemento = document.getElementById(`temp-${id}`);
                     if (elemento && Number.isFinite(valor)) {
                         elemento.textContent = valor.toFixed(1) + " °C";
+                        verificarAlertaCard(id, sensor);
                     }
                 });
             }
@@ -265,6 +269,7 @@
                     const elemento = document.getElementById(`hum-${id}`);
                     if (elemento && Number.isFinite(valor)) {
                         elemento.textContent = valor.toFixed(1) + " %";
+                        verificarAlertaCard(id, sensor);
                     }
                 });
             }
@@ -273,6 +278,42 @@
                 ouvirRota(sensor.rotaLastSeen, valor => {
                     atualizarOnline(id, valor);
                 });
+            }
+        }
+
+        // FUNÇÃO DE VALIDAÇÃO E ALTERAÇÃO DE COR DO CARD
+        function verificarAlertaCard(id, sensor) {
+            const card = document.getElementById(`card-${id}`);
+            if (!card) return;
+
+            const tempEl = document.getElementById(`temp-${id}`);
+            const humEl = document.getElementById(`hum-${id}`);
+
+            if (!tempEl || !humEl) return;
+
+            const tempVal = parseFloat(tempEl.textContent);
+            const humVal = parseFloat(humEl.textContent);
+
+            let emAlerta = false;
+
+            if (!isNaN(tempVal)) {
+                if ((sensor.tempMin !== undefined && sensor.tempMin !== null && tempVal < sensor.tempMin) ||
+                    (sensor.tempMax !== undefined && sensor.tempMax !== null && tempVal > sensor.tempMax)) {
+                    emAlerta = true;
+                }
+            }
+
+            if (!isNaN(humVal)) {
+                if ((sensor.humMin !== undefined && sensor.humMin !== null && humVal < sensor.humMin) ||
+                    (sensor.humMax !== undefined && sensor.humMax !== null && humVal > sensor.humMax)) {
+                    emAlerta = true;
+                }
+            }
+
+            if (emAlerta) {
+                card.className = "bg-[#fff1f2] rounded-2xl border border-rose-300 shadow-sm p-5 transition-colors duration-300";
+            } else {
+                card.className = "bg-white rounded-2xl border border-slate-200 shadow-sm p-5 transition-colors duration-300";
             }
         }
 
@@ -377,7 +418,6 @@
                 campoId.disabled = true;
                 campoId.oninput = null;
 
-                // Preencher campos
                 document.getElementById("nome").value = s.nome || "";
                 document.getElementById("cliente").value = s.clientID || "";
                 document.getElementById("tempMin").value = s.tempMin !== undefined ? s.tempMin : "";
@@ -445,7 +485,7 @@
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+                .replace(/[']/g, "&#039;");
         }
 
         function escapeAttr(valor) {
