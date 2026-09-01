@@ -272,6 +272,11 @@
                 elements.sensorNome.textContent = state.sensorID;
                 elements.sensorLocal.textContent = state.sensorConfig.nome || state.sensorConfig.local || "--";
                 elements.sensorCliente.textContent = state.sensorConfig.clientID || state.sensorConfig.cliente || "--";
+
+                if (state.sensorConfig.tempMin !== undefined) state.limites.tMin = Number(state.sensorConfig.tempMin);
+                if (state.sensorConfig.tempMax !== undefined) state.limites.tMax = Number(state.sensorConfig.tempMax);
+                if (state.sensorConfig.humMin !== undefined) state.limites.hMin = Number(state.sensorConfig.humMin);
+                if (state.sensorConfig.humMax !== undefined) state.limites.hMax = Number(state.sensorConfig.humMax);
             } else {
                 elements.sensorNome.textContent = state.sensorID;
             }
@@ -279,9 +284,14 @@
             const configAlertasSnap = await db.ref("config_alertas").once("value");
             if (configAlertasSnap.exists()) {
                 const cfg = configAlertasSnap.val();
-                ["tMin", "tMax", "hMin", "hMax"].forEach(k => {
-                    if (cfg[k] !== undefined) state.limites[k] = Number(cfg[k]);
-                });
+                if (state.sensorConfig?.tempMin === undefined) {
+                    if (cfg.tMin !== undefined) state.limites.tMin = Number(cfg.tMin);
+                    if (cfg.tMax !== undefined) state.limites.tMax = Number(cfg.tMax);
+                }
+                if (state.sensorConfig?.humMin === undefined) {
+                    if (cfg.hMin !== undefined) state.limites.hMin = Number(cfg.hMin);
+                    if (cfg.hMax !== undefined) state.limites.hMax = Number(cfg.hMax);
+                }
             }
 
             fetchData("diario");
@@ -289,6 +299,12 @@
             console.error("Erro ao carregar dados do sensor:", error);
             fetchData("diario");
         }
+    }
+
+    function checarErro(temp, hum) {
+        const erroTemp = temp > state.limites.tMax || temp < state.limites.tMin;
+        const erroHum = hum > state.limites.hMax || hum < state.limites.hMin;
+        return { erroTemp, erroHum, temErro: erroTemp || erroHum };
     }
 
     async function fetchData(periodo) {
@@ -305,7 +321,6 @@
             const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
             const seteDiasAtras = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
-            // Busca restrita estritamente ao nó do ID específico do sensor para prevenir mistura de dados entre os 1000 dispositivos
             const historicoSnap = await db.ref(`historico/${state.sensorID}`).once("value");
             
             if (!historicoSnap.exists()) {
@@ -400,9 +415,7 @@
                 ultimaData = d.data;
             }
 
-            const erroTemp = d.temp > state.limites.tMax || d.temp < state.limites.tMin;
-            const erroHum = d.hum > state.limites.hMax || d.hum < state.limites.hMin;
-            const temErro = erroTemp || erroHum;
+            const { erroTemp, erroHum, temErro } = checarErro(d.temp, d.hum);
 
             const itemDiv = document.createElement("div");
             itemDiv.className = `item ${temErro ? "alerta" : ""}`;
@@ -498,7 +511,7 @@
 
         elements.btnPdf.disabled = true;
 
-        const linhasPorPagina = 28;
+        const linhasPorPagina = 26;
         const totalPaginas = Math.max(1, Math.ceil(state.globalData.length / linhasPorPagina));
 
         const desenharHeader = (pagina) => {
@@ -518,6 +531,22 @@
             doc.text(`PÁGINA: ${pagina} / ${totalPaginas}`, 195, 27, { align: "right" });
             doc.setFillColor(0, 122, 255);
             doc.rect(0, 38, 210, 1.2, "F");
+
+            doc.setFillColor(241, 245, 249);
+            doc.rect(15, 43, 180, 10, "F");
+            doc.setDrawColor(226, 232, 240);
+            doc.rect(15, 43, 180, 10, "S");
+            
+            doc.setTextColor(71, 85, 105);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(7.5);
+            
+            const tMinStr = state.limites.tMin !== null ? `${state.limites.tMin}°C` : "--";
+            const tMaxStr = state.limites.tMax !== null ? `${state.limites.tMax}°C` : "--";
+            const hMinStr = state.limites.hMin !== null ? `${state.limites.hMin}%` : "--";
+            const hMaxStr = state.limites.hMax !== null ? `${state.limites.hMax}%` : "--";
+
+            doc.text(`CONFIGURAÇÃO APLICADA NESSA EMISSÃO -> Temp: ${tMinStr} a ${tMaxStr}  |  Umidade: ${hMinStr} a ${hMaxStr}`, 20, 49.5);
         };
 
         const desenharTabelaHeader = (yPos) => {
@@ -537,7 +566,7 @@
 
         let paginaAtual = 1;
         desenharHeader(paginaAtual);
-        let y = desenharTabelaHeader(55);
+        let y = desenharTabelaHeader(62);
 
         for (let i = 0; i < state.globalData.length; i++) {
             const item = state.globalData[i];
@@ -546,11 +575,10 @@
                 doc.addPage();
                 paginaAtual++;
                 desenharHeader(paginaAtual);
-                y = desenharTabelaHeader(55);
+                y = desenharTabelaHeader(62);
             }
 
-            const temErro = item.temp > state.limites.tMax || item.temp < state.limites.tMin || 
-                           item.hum > state.limites.hMax || item.hum < state.limites.hMin;
+            const { temErro } = checarErro(item.temp, item.hum);
 
             if (temErro) {
                 doc.setFillColor(255, 241, 242);
