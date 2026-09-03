@@ -14,10 +14,6 @@
     <!-- Script jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <!-- Firebase App & Database (Compat SDK) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
     <style>
         :root {
             --bg-color: #f8fafc;
@@ -213,7 +209,7 @@
         sensorConfig: null,
         globalData: [],
         chartInstance: null,
-        limites: { tMin: 2, tMax: 8, hMin: 40, hMax: 75 } // Padrão seguro caso não venha do banco
+        limites: { tMin: 2, tMax: 8, hMin: 30, hMax: 70 }
     };
 
     if (!firebase.apps.length) {
@@ -272,7 +268,6 @@
 
     async function carregarSensorESuasConfiguracoes() {
         try {
-            // Busca exclusiva das configurações do sensor selecionado
             const sensorSnap = await db.ref(`central_sensores/${state.sensorID}`).once("value");
             
             if (sensorSnap.exists()) {
@@ -280,23 +275,20 @@
                 elements.sensorNome.textContent = state.sensorID;
                 elements.sensorLocal.textContent = state.sensorConfig.nome || state.sensorConfig.local || "Local não definido";
 
-                // Aplica os limites individuais cadastrados para este sensor
-                if (state.sensorConfig.tempMin !== undefined) state.limites.tMin = Number(state.sensorConfig.tempMin);
-                if (state.sensorConfig.tempMax !== undefined) state.limites.tMax = Number(state.sensorConfig.tempMax);
-                if (state.sensorConfig.humMin !== undefined) state.limites.hMin = Number(state.sensorConfig.humMin);
-                if (state.sensorConfig.humMax !== undefined) state.limites.hMax = Number(state.sensorConfig.humMax);
+                if (state.sensorConfig.tempMin !== undefined && state.sensorConfig.tempMin !== null) state.limites.tMin = Number(state.sensorConfig.tempMin);
+                if (state.sensorConfig.tempMax !== undefined && state.sensorConfig.tempMax !== null) state.limites.tMax = Number(state.sensorConfig.tempMax);
+                if (state.sensorConfig.humMin !== undefined && state.sensorConfig.humMin !== null) state.limites.hMin = Number(state.sensorConfig.humMin);
+                if (state.sensorConfig.humMax !== undefined && state.sensorConfig.humMax !== null) state.limites.hMax = Number(state.sensorConfig.humMax);
             } else {
                 elements.sensorNome.textContent = state.sensorID;
                 elements.sensorLocal.textContent = "Sensor não cadastrado na central";
             }
 
-            // Atualiza os rótulos de limites no cabeçalho
             elements.lblTMin.textContent = state.limites.tMin;
             elements.lblTMax.textContent = state.limites.tMax;
             elements.lblHMin.textContent = state.limites.hMin;
             elements.lblHMax.textContent = state.limites.hMax;
 
-            // Inicia a busca do histórico respeitando a rota isolada do sensor
             fetchData("diario");
         } catch (error) {
             console.error("Erro ao carregar configurações do sensor:", error);
@@ -324,7 +316,6 @@
             const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
             const seteDiasAtras = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
-            // ISOLAMENTO DE HISTÓRICO: Busca apenas na pasta exclusiva deste sensor
             const historicoSnap = await db.ref(`historico/${state.sensorID}`).once("value");
             
             if (!historicoSnap.exists()) {
@@ -382,6 +373,7 @@
 
         const temp = Number(r.temp);
         const hum = Number(r.hum);
+        if (!Number.isFinite(temp) || !Number.isFinite(hum)) return;
 
         let timestamp = Number(keyOrTs);
         if (!Number.isFinite(timestamp)) timestamp = Number(r.timestamp || r.ts || Date.now());
@@ -420,7 +412,6 @@
                 ultimaData = d.data;
             }
 
-            // Utiliza as regras e limites individuais deste sensor
             const { erroTemp, erroHum, temErro } = checarErro(d.temp, d.hum);
 
             const itemDiv = document.createElement("div");
