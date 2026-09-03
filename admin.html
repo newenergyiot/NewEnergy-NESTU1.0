@@ -172,8 +172,6 @@
         let editando = false;
         let sensorEditando = null;
         let listeners = {};
-        let estadosAlertaEnviados = {}; 
-        let ultimoEnvioEmail = {}; 
         let cliquesLogoCount = 0;
 
         function escapeHtml(str) {
@@ -420,7 +418,11 @@
             let intervaloMs = intervaloMinutos * 60 * 1000;
             let agora = Date.now();
 
-            if (!window.proximoEnvioEmail) window.proximoEnvioEmail = {};
+            // Chaves persistentes no navegador (localStorage) para resistir a page refresh
+            let chavePushTemp = `push_enviado_${id}_temp`;
+            let chavePushHum = `push_enviado_${id}_hum`;
+            let chaveUltimoEmailTemp = `ultimo_envio_${id}_temp`;
+            let chaveUltimoEmailHum = `ultimo_envio_${id}_hum`;
 
             if (tempEl && boxTemp) {
                 let textoTemp = tempEl.textContent.replace("°C", "").trim();
@@ -429,25 +431,24 @@
                 if (!isNaN(tempVal)) {
                     const abaixoMin = sensor.tempMin !== undefined && sensor.tempMin !== null && tempVal < sensor.tempMin;
                     const acimaMax = sensor.tempMax !== undefined && sensor.tempMax !== null && tempVal > sensor.tempMax;
-                    const chaveAlertaTemp = `${id}_temp`;
 
                     if (abaixoMin || acimaMax) {
                         boxTemp.className = "bg-[#fff1f2] rounded-xl p-3 text-center border border-rose-300 transition-colors duration-300";
                         
-                        if (!estadosAlertaEnviados[chaveAlertaTemp]) {
-                            estadosAlertaEnviados[chaveAlertaTemp] = true;
+                        let pushJaEnviado = localStorage.getItem(chavePushTemp) === "true";
+                        if (!pushJaEnviado) {
+                            localStorage.setItem(chavePushTemp, "true");
                             dispararNotificacaoLocal(
                                 `🚨 Alerta de Temperatura: ${nomeSensor}`,
                                 `O sensor ${id} registrou ${tempVal.toFixed(1)}°C (Fora da faixa!).`
                             );
                         }
 
-                        let ultimoTempo = ultimoEnvioEmail[chaveAlertaTemp] || 0;
+                        let ultimoTempo = parseInt(localStorage.getItem(chaveUltimoEmailTemp)) || 0;
                         let proximoPermitido = ultimoTempo + intervaloMs;
 
                         if (agora - ultimoTempo > intervaloMs) {
-                            ultimoEnvioEmail[chaveAlertaTemp] = agora;
-                            proximoPermitido = agora + intervaloMs;
+                            localStorage.setItem(chaveUltimoEmailTemp, agora);
                             dispararEmailAlerta(emailDestino, nomeSensor, "Temperatura Anormal", tempVal.toFixed(1) + "°C");
                             if (statusEmailTemp) statusEmailTemp.textContent = "✉️ E-mail de alerta enviado agora!";
                         } else {
@@ -459,8 +460,8 @@
                         }
                     } else {
                         boxTemp.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
-                        estadosAlertaEnviados[chaveAlertaTemp] = false;
-                        ultimoEnvioEmail[chaveAlertaTemp] = 0;
+                        localStorage.setItem(chavePushTemp, "false");
+                        localStorage.removeItem(chaveUltimoEmailTemp);
                         if (statusEmailTemp) statusEmailTemp.textContent = "";
                     }
                 }
@@ -473,25 +474,24 @@
                 if (!isNaN(humVal)) {
                     const abaixoMin = sensor.humMin !== undefined && sensor.humMin !== null && humVal < sensor.humMin;
                     const acimaMax = sensor.humMax !== undefined && sensor.humMax !== null && humVal > sensor.humMax;
-                    const chaveAlertaHum = `${id}_hum`;
 
                     if (abaixoMin || acimaMax) {
                         boxHum.className = "bg-[#fff1f2] rounded-xl p-3 text-center border border-rose-300 transition-colors duration-300";
                         
-                        if (!estadosAlertaEnviados[chaveAlertaHum]) {
-                            estadosAlertaEnviados[chaveAlertaHum] = true;
+                        let pushJaEnviado = localStorage.getItem(chavePushHum) === "true";
+                        if (!pushJaEnviado) {
+                            localStorage.setItem(chavePushHum, "true");
                             dispararNotificacaoLocal(
                                 `🚨 Alerta de Umidade: ${nomeSensor}`,
                                 `O sensor ${id} registrou ${humVal.toFixed(1)}% (Fora da faixa!).`
                             );
                         }
 
-                        let ultimoTempo = ultimoEnvioEmail[chaveAlertaHum] || 0;
+                        let ultimoTempo = parseInt(localStorage.getItem(chaveUltimoEmailHum)) || 0;
                         let proximoPermitido = ultimoTempo + intervaloMs;
 
                         if (agora - ultimoTempo > intervaloMs) {
-                            ultimoEnvioEmail[chaveAlertaHum] = agora;
-                            proximoPermitido = agora + intervaloMs;
+                            localStorage.setItem(chaveUltimoEmailHum, agora);
                             dispararEmailAlerta(emailDestino, nomeSensor, "Umidade Anormal", humVal.toFixed(1) + "%");
                             if (statusEmailHum) statusEmailHum.textContent = "✉️ E-mail de alerta enviado agora!";
                         } else {
@@ -503,8 +503,8 @@
                         }
                     } else {
                         boxHum.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
-                        estadosAlertaEnviados[chaveAlertaHum] = false;
-                        ultimoEnvioEmail[chaveAlertaHum] = 0;
+                        localStorage.setItem(chavePushHum, "false");
+                        localStorage.removeItem(chaveUltimoEmailHum);
                         if (statusEmailHum) statusEmailHum.textContent = "";
                     }
                 }
