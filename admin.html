@@ -28,7 +28,7 @@
                 <button onclick="solicitarPermissaoPush()" id="btnPush" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1">
                     🔔 Ativar Alertas Push
                 </button>
-                <!-- O botão "+ Novo Sensor" agora fica oculto por padrão e só aparece após autenticação ou liberação -->
+                <!-- O botão "+ Novo Sensor" agora fica visível para administradores/liberados -->
                 <button id="btnNovoSensor" onclick="abrirModal()" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
                     + Novo Sensor
                 </button>
@@ -177,12 +177,44 @@
         let listeners = {};
         let estadosAlertaEnviados = {}; 
         let ultimoEnvioEmail = {}; 
-        let cliquesLogo = 5; // Inicialmente liberado ou controlado por auth
+        let cliquesLogoCount = 0; // Contador para os cliques de desbloqueio administrativo
+
+        // Funções de escape para segurança contra XSS
+        function escapeHtml(str) {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function escapeAttr(str) {
+            if (!str) return "";
+            return String(str).replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Sistema de cliques no logo para liberar recursos administrativos (5 cliques)
+        document.getElementById("logoAdmin").addEventListener("click", () => {
+            cliquesLogoCount++;
+            if (cliquesLogoCount >= 5) {
+                cliquesLogoCount = 0;
+                const btnNovo = document.getElementById("btnNovoSensor");
+                if (btnNovo.classList.contains("hidden")) {
+                    btnNovo.classList.remove("hidden");
+                    alert("Modo Administrativo Ativado: Botão '+ Novo Sensor' liberado!");
+                } else {
+                    btnNovo.classList.add("hidden");
+                    alert("Modo Administrativo Ocultado.");
+                }
+            }
+        });
 
         // PROTEÇÃO DE AUTH: Redireciona para o login se não houver usuário autenticado
         auth.onAuthStateChanged(user => {
             if (!user) {
-                window.location.href = "index.html"; // Altere para a sua página de login se necessário
+                window.location.href = "index.html";
             }
         });
 
@@ -220,7 +252,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/NewEnergy-NESTU1.0/sw.js')
+                navigator.serviceWorker.register('/sw.js')
                     .then(reg => console.log('Service Worker registrado com sucesso!', reg))
                     .catch(err => console.log('Falha ao registrar Service Worker:', err));
             });
@@ -609,6 +641,7 @@
                 nome: document.getElementById("nome").value.trim(),
                 clientID: document.getElementById("cliente").value.trim(),
                 tempMin: parseFloat(document.getElementById("tempMin").value) || null,
+                tempMax: parseFloat(document.getElementById("tempMax").value)correcao = true ? parseFloat(document.getElementById("tempMax").value) : null, // mantido simples
                 tempMax: parseFloat(document.getElementById("tempMax").value) || null,
                 humMin: parseFloat(document.getElementById("humMin").value) || null,
                 humMax: parseFloat(document.getElementById("humMax").value) || null,
@@ -639,25 +672,6 @@
                 alert("Erro ao excluir.");
             });
         }
-
-        function escapeHtml(valor) {
-            return String(valor || "")
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/[']/g, "&#039;");
-        }
-
-        function escapeAttr(valor) {
-            return String(valor || "")
-                .replace(/\\/g, "\\\\")
-                .replace(/'/g, "\\'");
-        }
-
-        document.addEventListener("keydown", event => {
-            if (event.key === "Escape") fecharModal();
-        });
     </script>
 </body>
 
