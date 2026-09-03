@@ -149,7 +149,7 @@
     <script>
         // Inicialização do EmailJS
         (function(){
-            emailjs.init("kD4PCi1Nc4Tw0GD1e"); // Substitua pela sua Public Key do EmailJS se necessário
+            emailjs.init("kD4PCi1Nc4Tw0GD1e");
         })();
 
         const firebaseConfig = {
@@ -170,7 +170,7 @@
         let sensorEditando = null;
         let listeners = {};
         let estadosAlertaEnviados = {}; 
-        let ultimoEnvioEmail = {}; // Controle de cooldown por e-mail para evitar spam
+        let ultimoEnvioEmail = {}; 
 
         function dispararEmailAlerta(emailDestino, equipamento, tipoAlerta, valorDetectado) {
             if (!emailDestino) return;
@@ -299,12 +299,14 @@
 
                 <div class="grid grid-cols-2 gap-3 mt-4">
                     <div id="box-temp-${escapeAttr(id)}" class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300">
-                        <p class="text-xs text-slate-500">Temperatura</p>
-                        <strong id="temp-${escapeAttr(id)}" class="text-2xl text-slate-800">-- °C</strong>
+                        <span class="text-xs text-slate-500">Temperatura</span>
+                        <div id="temp-${escapeAttr(id)}" class="text-xl font-bold text-slate-800">-- °C</div>
+                        <div id="status-email-temp-${escapeAttr(id)}" class="text-[10px] text-rose-600 font-medium mt-1"></div>
                     </div>
                     <div id="box-hum-${escapeAttr(id)}" class="bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300">
-                        <p class="text-xs text-slate-500">Umidade</p>
-                        <strong id="hum-${escapeAttr(id)}" class="text-2xl text-slate-800">-- %</strong>
+                        <span class="text-xs text-slate-500">Umidade</span>
+                        <div id="hum-${escapeAttr(id)}" class="text-xl font-bold text-slate-800">-- %</div>
+                        <div id="status-email-hum-${escapeAttr(id)}" class="text-[10px] text-rose-600 font-medium mt-1"></div>
                     </div>
                 </div>
 
@@ -333,34 +335,38 @@
                 ouvirRota(sensor.rotaTemp, valor => {
                     const elemento = document.getElementById(`temp-${id}`);
                     if (elemento && Number.isFinite(valor)) {
-                        elemento.textContent = valor.toFixed(1) + " °C";
-                        verificarAlertaCaixas(id, sensor, valor, null);
-                    }
-                });
-            }
+                          elemento.textContent = valor.toFixed(1) + " °C";
+                          verificarAlertaCaixas(id, sensor, valor, null);
+                  }
+              });
+          }
 
-            if (sensor.rotaHum) {
-                ouvirRota(sensor.rotaHum, valor => {
-                    const elemento = document.getElementById(`hum-${id}`);
-                    if (elemento && Number.isFinite(valor)) {
-                        elemento.textContent = valor.toFixed(1) + " %";
-                        verificarAlertaCaixas(id, sensor, null, valor);
-                    }
-                });
-            }
+          if (sensor.rotaHum) {
+              ouvirRota(sensor.rotaHum, valor => {
+                  const elemento = document.getElementById(`hum-${id}`);
+                  if (elemento && Number.isFinite(valor)) {
+                      elemento.textContent = valor.toFixed(1) + " %";
+                      verificarAlertaCaixas(id, sensor, null, valor);
+                  }
+              });
+          }
 
-            if (sensor.rotaLastSeen) {
-                ouvirRota(sensor.rotaLastSeen, valor => {
-                    atualizarOnline(id, valor);
-                });
-            }
+          if (sensor.rotaLastSeen) {
+              ouvirRota(sensor.rotaLastSeen, valor => {
+                  atualizarOnline(id, valor);
+              });
+          }
         }
 
         function verificarAlertaCaixas(id, sensor, tempForcada = null, humForcada = null) {
-            const tempEl = document.getElementById(`temp-${id}`);
-            const humEl = document.getElementById(`hum-${id}`);
-            const boxTemp = document.getElementById(`box-temp-${id}`);
-            const boxHum = document.getElementById(`box-hum-${id}`);
+            const safeId = escapeAttr(id);
+            const tempEl = document.getElementById(`temp-${safeId}`);
+            const humEl = document.getElementById(`hum-${safeId}`);
+            const boxTemp = document.getElementById(`box-temp-${safeId}`);
+            const boxHum = document.getElementById(`box-hum-${safeId}`);
+            
+            const statusEmailTemp = document.getElementById(`status-email-temp-${safeId}`);
+            const statusEmailHum = document.getElementById(`status-email-hum-${safeId}`);
 
             let nomeSensor = sensor.nome || id;
             let emailDestino = sensor.emailAlerta;
@@ -368,12 +374,15 @@
             let intervaloMs = intervaloMinutos * 60 * 1000;
             let agora = Date.now();
 
+            if (!window.proximoEnvioEmail) window.proximoEnvioEmail = {};
+
             if (tempEl && boxTemp) {
-                const tempVal = tempForcada !== null ? tempForcada : parseFloat(tempEl.textContent);
+                let textoTemp = tempEl.textContent.replace("°C", "").trim();
+                const tempVal = tempForcada !== null ? tempForcada : parseFloat(textoTemp);
+                
                 if (!isNaN(tempVal)) {
                     const abaixoMin = sensor.tempMin !== undefined && sensor.tempMin !== null && tempVal < sensor.tempMin;
                     const acimaMax = sensor.tempMax !== undefined && sensor.tempMax !== null && tempVal > sensor.tempMax;
-                    
                     const chaveAlertaTemp = `${id}_temp`;
 
                     if (abaixoMin || acimaMax) {
@@ -383,53 +392,78 @@
                             estadosAlertaEnviados[chaveAlertaTemp] = true;
                             dispararNotificacaoLocal(
                                 `🚨 Alerta de Temperatura: ${nomeSensor}`,
-                                `O sensor ${id} registrou ${tempVal.toFixed(1)}°C (Fora da faixa permitida!).`
+                                `O sensor ${id} registrou ${tempVal.toFixed(1)}°C (Fora da faixa!).`
                             );
                         }
 
                         let ultimoTempo = ultimoEnvioEmail[chaveAlertaTemp] || 0;
+                        let proximoPermitido = ultimoTempo + intervaloMs;
+
                         if (agora - ultimoTempo > intervaloMs) {
                             ultimoEnvioEmail[chaveAlertaTemp] = agora;
+                            proximoPermitido = agora + intervaloMs;
                             dispararEmailAlerta(emailDestino, nomeSensor, "Temperatura Anormal", tempVal.toFixed(1) + "°C");
+                            if (statusEmailTemp) statusEmailTemp.textContent = "✉️ E-mail de alerta enviado agora!";
+                        } else {
+                            let tempoRestanteMs = proximoPermitido - agora;
+                            let minutosRestantes = Math.ceil(tempoRestanteMs / (60 * 1000));
+                            if (statusEmailTemp) {
+                                statusEmailTemp.textContent = `⏳ Próximo e-mail em ~${minutosRestantes} min`;
+                            }
                         }
                     } else {
                         boxTemp.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
                         estadosAlertaEnviados[chaveAlertaTemp] = false;
+                        ultimoEnvioEmail[chaveAlertaTemp] = 0;
+                        if (statusEmailTemp) statusEmailTemp.textContent = "";
                     }
                 }
-            }
+          }
 
-            if (humEl && boxHum) {
-                const humVal = humForcada !== null ? humForcada : parseFloat(humEl.textContent);
-                if (!isNaN(humVal)) {
-                    const abaixoMin = sensor.humMin !== undefined && sensor.humMin !== null && humVal < sensor.humMin;
-                    const acimaMax = sensor.humMax !== undefined && sensor.humMax !== null && humVal > sensor.humMax;
-                    
-                    const chaveAlertaHum = `${id}_hum`;
+          if (humEl && boxHum) {
+              let textoHum = humEl.textContent.replace("%", "").trim();
+              const humVal = humForcada !== null ? humForcada : parseFloat(textoHum);
+              
+              if (!isNaN(humVal)) {
+                  const abaixoMin = sensor.humMin !== undefined && sensor.humMin !== null && humVal < sensor.humMin;
+                  const acimaMax = sensor.humMax !== undefined && sensor.humMax !== null && humVal > sensor.humMax;
+                  const chaveAlertaHum = `${id}_hum`;
 
-                    if (abaixoMin || acimaMax) {
-                        boxHum.className = "bg-[#fff1f2] rounded-xl p-3 text-center border border-rose-300 transition-colors duration-300";
-                        
-                        if (!estadosAlertaEnviados[chaveAlertaHum]) {
-                            estadosAlertaEnviados[chaveAlertaHum] = true;
-                            dispararNotificacaoLocal(
-                                `🚨 Alerta de Umidade: ${nomeSensor}`,
-                                `O sensor ${id} registrou ${humVal.toFixed(1)}% de umidade (Fora da faixa!).`
-                            );
-                        }
+                  if (abaixoMin || acimaMax) {
+                      boxHum.className = "bg-[#fff1f2] rounded-xl p-3 text-center border border-rose-300 transition-colors duration-300";
+                      
+                      if (!estadosAlertaEnviados[chaveAlertaHum]) {
+                          estadosAlertaEnviados[chaveAlertaHum] = true;
+                          dispararNotificacaoLocal(
+                              `🚨 Alerta de Umidade: ${nomeSensor}`,
+                              `O sensor ${id} registrou ${humVal.toFixed(1)}% (Fora da faixa!).`
+                          );
+                      }
 
-                        let ultimoTempo = ultimoEnvioEmail[chaveAlertaHum] || 0;
-                        if (agora - ultimoTempo > intervaloMs) {
-                            ultimoEnvioEmail[chaveAlertaHum] = agora;
-                            dispararEmailAlerta(emailDestino, nomeSensor, "Umidade Anormal", humVal.toFixed(1) + "%");
-                        }
-                    } else {
-                        boxHum.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
-                        estadosAlertaEnviados[chaveAlertaHum] = false;
-                    }
-                }
-            }
-        }
+                      let ultimoTempo = ultimoEnvioEmail[chaveAlertaHum] || 0;
+                      let proximoPermitido = ultimoTempo + intervaloMs;
+
+                      if (agora - ultimoTempo > intervaloMs) {
+                          ultimoEnvioEmail[chaveAlertaHum] = agora;
+                          proximoPermitido = agora + intervaloMs;
+                          dispararEmailAlerta(emailDestino, nomeSensor, "Umidade Anormal", humVal.toFixed(1) + "%");
+                          if (statusEmailHum) statusEmailHum.textContent = "✉️ E-mail de alerta enviado agora!";
+                      } else {
+                          let tempoRestanteMs = proximoPermitido - agora;
+                          let minutosRestantes = Math.ceil(tempoRestanteMs / (60 * 1000));
+                          if (statusEmailHum) {
+                              statusEmailHum.textContent = `⏳ Próximo e-mail em ~${minutosRestantes} min`;
+                          }
+                      }
+                  } else {
+                      boxHum.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
+                      estadosAlertaEnviados[chaveAlertaHum] = false;
+                      ultimoEnvioEmail[chaveAlertaHum] = 0;
+                      if (statusEmailHum) statusEmailHum.textContent = "";
+                  }
+              }
+          }
+      }
 
         function ouvirRota(rota, callback) {
             if (!rota) return;
@@ -439,17 +473,17 @@
             ref.on("value", snapshot => {
                 const valor = Number(snapshot.val());
                 callback(valor);
-            });
+          });
 
-            listeners[rotaLimpa] = ref;
-        }
+          listeners[rotaLimpa] = ref;
+      }
 
         function normalizarRota(rota) {
             if (!rota) return "";
             rota = String(rota).trim();
             if (rota.startsWith("/")) rota = rota.substring(1);
             return rota;
-        }
+      }
 
         function atualizarOnline(id, timestamp) {
             if (!Number.isFinite(Number(timestamp))) return;
@@ -475,7 +509,7 @@
             if (hora) {
                 hora.textContent = new Date(ts * 1000).toLocaleTimeString("pt-BR");
             }
-        }
+      }
 
         function abrirModal() {
             editando = false;
@@ -486,7 +520,7 @@
             campoId.disabled = false;
             campoId.oninput = sugerirRotas;
             document.getElementById("modal").classList.remove("hidden");
-        }
+      }
 
         function sugerirRotas() {
             if (editando) return;
@@ -504,11 +538,11 @@
                 document.getElementById("rotaHum").value = `/hum${numero}`;
                 document.getElementById("rotaLastSeen").value = `/last_seen${numero}`;
             }
-        }
+      }
 
         function fecharModal() {
             document.getElementById("modal").classList.add("hidden");
-        }
+      }
 
         function editar(id) {
             db.ref(`central_sensores/${id}`).once("value").then(snapshot => {
@@ -541,11 +575,11 @@
                 document.getElementById("rotaLastSeen").value = s.rotaLastSeen || "";
 
                 document.getElementById("modal").classList.remove("hidden");
-            }).catch(error => {
-                console.error(error);
-                alert("Erro ao carregar dados do sensor.");
-            });
-        }
+          }).catch(error => {
+              console.error(error);
+              alert("Erro ao carregar dados do sensor.");
+          });
+      }
 
         function salvar(event) {
             event.preventDefault();
@@ -569,22 +603,22 @@
             db.ref(`central_sensores/${id}`).update(dados).then(() => {
                 alert(editando ? "Configurações atualizadas!" : "Sensor cadastrado!");
                 fecharModal();
-            }).catch(error => {
-                console.error(error);
-                alert("Erro ao salvar alterações no Firebase.");
-            });
-        }
+          }).catch(error => {
+              console.error(error);
+              alert("Erro ao salvar alterações no Firebase.");
+          });
+      }
 
         function excluir(id) {
             if (!confirm(`Deseja excluir permanentemente o ${id}?`)) return;
 
             db.ref(`central_sensores/${id}`).remove().then(() => {
                 alert("Sensor removido com sucesso.");
-            }).catch(error => {
-                console.error(error);
-                alert("Erro ao excluir.");
-            });
-        }
+          }).catch(error => {
+              console.error(error);
+              alert("Erro ao excluir.");
+          });
+      }
 
         function escapeHtml(valor) {
             return String(valor || "")
@@ -593,17 +627,17 @@
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/[']/g, "&#039;");
-        }
+      }
 
         function escapeAttr(valor) {
             return String(valor || "")
                 .replace(/\\/g, "\\\\")
                 .replace(/'/g, "\\'");
-        }
+      }
 
         document.addEventListener("keydown", event => {
             if (event.key === "Escape") fecharModal();
-        });
+      });
     </script>
 </body>
 
