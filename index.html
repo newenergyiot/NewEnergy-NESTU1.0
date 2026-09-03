@@ -203,7 +203,7 @@
 
     // Monitora o estado de autenticação para redirecionar se já logado
     auth.onAuthStateChanged(user => {
-      if (user) window.location.href = "painel.html";
+      if (user) window.location.href = "admin.html";
     });
 
     btnLogin.addEventListener("click", () => {
