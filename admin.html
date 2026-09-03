@@ -28,7 +28,6 @@
                 <button onclick="solicitarPermissaoPush()" id="btnPush" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1">
                     🔔 Ativar Alertas Push
                 </button>
-                <!-- O botão "+ Novo Sensor" agora fica visível para administradores/liberados -->
                 <button id="btnNovoSensor" onclick="abrirModal()" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
                     + Novo Sensor
                 </button>
@@ -150,9 +149,7 @@
             box-shadow: 0 0 0 2px #bfdbfe;
         }
     </style>
-
     <script>
-        // Inicialização do EmailJS
         (function(){
             emailjs.init("kD4PCi1Nc4Tw0GD1e");
         })();
@@ -177,9 +174,8 @@
         let listeners = {};
         let estadosAlertaEnviados = {}; 
         let ultimoEnvioEmail = {}; 
-        let cliquesLogoCount = 0; // Contador para os cliques de desbloqueio administrativo
+        let cliquesLogoCount = 0;
 
-        // Funções de escape para segurança contra XSS
         function escapeHtml(str) {
             if (!str) return "";
             return String(str)
@@ -195,7 +191,6 @@
             return String(str).replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // Sistema de cliques no logo para liberar recursos administrativos (5 cliques)
         document.getElementById("logoAdmin").addEventListener("click", () => {
             cliquesLogoCount++;
             if (cliquesLogoCount >= 5) {
@@ -211,7 +206,6 @@
             }
         });
 
-        // PROTEÇÃO DE AUTH: Redireciona para o login se não houver usuário autenticado
         auth.onAuthStateChanged(user => {
             if (!user) {
                 window.location.href = "index.html";
@@ -641,7 +635,6 @@
                 nome: document.getElementById("nome").value.trim(),
                 clientID: document.getElementById("cliente").value.trim(),
                 tempMin: parseFloat(document.getElementById("tempMin").value) || null,
-                tempMax: parseFloat(document.getElementById("tempMax").value)correcao = true ? parseFloat(document.getElementById("tempMax").value) : null, // mantido simples
                 tempMax: parseFloat(document.getElementById("tempMax").value) || null,
                 humMin: parseFloat(document.getElementById("humMin").value) || null,
                 humMax: parseFloat(document.getElementById("humMax").value) || null,
