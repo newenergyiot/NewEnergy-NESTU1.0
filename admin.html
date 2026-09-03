@@ -19,7 +19,7 @@
     <!-- CABEÇALHO --->
     <header class="bg-white border-b p-5 shadow-sm">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div>
+            <div class="cursor-pointer select-none" id="logoAdmin" title="Clique 5 vezes para opções administrativas">
                 <h1 class="text-2xl font-bold text-slate-800">CENTRAL NEWENERGY</h1>
                 <p class="text-sm text-blue-600">Monitoramento Geral</p>
             </div>
@@ -28,8 +28,12 @@
                 <button onclick="solicitarPermissaoPush()" id="btnPush" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1">
                     🔔 Ativar Alertas Push
                 </button>
-                <button onclick="abrirModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
+                <!-- O botão "+ Novo Sensor" agora fica oculto por padrão e só aparece após autenticação ou liberação -->
+                <button id="btnNovoSensor" onclick="abrirModal()" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-sm">
                     + Novo Sensor
+                </button>
+                <button onclick="fazerLogout()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs">
+                    Sair
                 </button>
             </div>
         </div>
@@ -164,6 +168,7 @@
         };
 
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         const db = firebase.database();
         const messaging = firebase.messaging();
 
@@ -172,6 +177,20 @@
         let listeners = {};
         let estadosAlertaEnviados = {}; 
         let ultimoEnvioEmail = {}; 
+        let cliquesLogo = 5; // Inicialmente liberado ou controlado por auth
+
+        // PROTEÇÃO DE AUTH: Redireciona para o login se não houver usuário autenticado
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = "login.html"; // Altere para a sua página de login se necessário
+            }
+        });
+
+        function fazerLogout() {
+            auth.signOut().then(() => {
+                window.location.href = "index.html";
+            });
+        }
 
         function dispararEmailAlerta(emailDestino, equipamento, tipoAlerta, valorDetectado) {
             if (!emailDestino) return;
@@ -336,8 +355,8 @@
                 ouvirRota(sensor.rotaTemp, valor => {
                     const elemento = document.getElementById(`temp-${id}`);
                     if (elemento && Number.isFinite(valor)) {
-                          elemento.textContent = valor.toFixed(1) + " °C";
-                          verificarAlertaCaixas(id, sensor, valor, null);
+                         elemento.textContent = valor.toFixed(1) + " °C";
+                         verificarAlertaCaixas(id, sensor, valor, null);
                     }
                 });
             }
