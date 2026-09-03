@@ -1,0 +1,12 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions para alertas NewEnergy",
+  "dependencies": {
+    "firebase-admin": "^11.8.0",
+    "firebase-functions": "^4.3.1",
+    "resend": "^2.0.0"
+  },
+  "engines": {
+    "node": "18"
+  }
+}
