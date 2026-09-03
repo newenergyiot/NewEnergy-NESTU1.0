@@ -40,6 +40,11 @@
     </div>
 
     <script>
+        // Inicialização do EmailJS (Substitua pela sua Public Key se necessário)
+        (function(){
+            emailjs.init("YOUR_PUBLIC_KEY"); // Opcional se já inicializado no index, mas bom manter aqui também
+        })();
+
         // Configuração do Firebase
         const firebaseConfig = {
             databaseURL: "https://newenergy-temp-default-rtdb.firebaseio.com/"
@@ -51,6 +56,105 @@
 
         const db = firebase.database();
         let dadosSensoresGlobais = {};
+
+        // Variável de controle de tempo para evitar spam de e-mails
+        let ultimoEnvioAlerta = {};
+
+        function dispararEmailAlerta(emailDestino, equipamento, tipoAlerta, valorDetectado) {
+            if (!emailDestino) return;
+
+            const templateParams = {
+                para_email: emailDestino, // Mapeado corretamente para o template do EmailJS
+                equipamento: equipamento,
+                tipo: tipoAlerta,
+                valor: valorDetectado,
+                data: new Date().toLocaleString("pt-BR")
+            };
+
+            emailjs.send('service_v0ldsah', 'template_hnmc8uf', templateParams)
+                .then(response => {
+                    console.log('E-mail de alerta enviado com sucesso!', response.status, response.text);
+                }, error => {
+                    console.error('Erro ao enviar e-mail de alerta:', error);
+                });
+        }
+
+        function dispararNotificacaoLocal(titulo, corpo) {
+            console.log(`${titulo}: ${corpo}`);
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(titulo, { body: corpo });
+            }
+        }
+
+        function verificarAlertaCaixas(id, sensor, tempForcada = null, humForcada = null) {
+            const tempEl = document.getElementById(`temp-${id}`);
+            const humEl = document.getElementById(`hum-${id}`);
+            const boxTemp = document.getElementById(`box-temp-${id}`);
+            const boxHum = document.getElementById(`box-hum-${id}`);
+
+            let nomeSensor = sensor.nome || id;
+            let emailDestino = sensor.emailAlerta;
+            
+            let intervaloMinutos = sensor.intervaloAlerta !== undefined && sensor.intervaloAlerta !== null ? Number(sensor.intervaloAlerta) : 15;
+            let intervaloMs = intervaloMinutos * 60 * 1000;
+            let agora = Date.now();
+
+            if (tempEl && boxTemp) {
+                const tempVal = tempForcada !== null ? tempForcada : parseFloat(tempEl.textContent);
+                if (!isNaN(tempVal)) {
+                    const abaixoMin = sensor.tempMin !== undefined && sensor.tempMin !== null && tempVal < sensor.tempMin;
+                    const acimaMax = sensor.tempMax !== undefined && sensor.tempMax !== null && tempVal > sensor.tempMax;
+                    
+                    const chaveAlertaTemp = `${id}_temp`;
+
+                    if (abaixoMin || acimaMax) {
+                        boxTemp.className = "bg-[#fff1f2] rounded-xl p-3 text-center border border-rose-300 transition-colors duration-300";
+                        
+                        let ultimoTempo = ultimoEnvioAlerta[chaveAlertaTemp] || 0;
+                        
+                        if (agora - ultimoTempo > intervaloMs) {
+                            ultimoEnvioAlerta[chaveAlertaTemp] = agora;
+                            
+                            dispararNotificacaoLocal(
+                                `🚨 Alerta de Temperatura: ${nomeSensor}`,
+                                `O sensor ${id} registrou ${tempVal.toFixed(1)}°C (Fora da faixa permitida!).`
+                            );
+                            dispararEmailAlerta(emailDestino, nomeSensor, "Temperatura Anormal", tempVal.toFixed(1) + "°C");
+                        }
+                    } else {
+                        boxTemp.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
+                    }
+                }
+            }
+
+            if (humEl && boxHum) {
+                const humVal = humForcada !== null ? humForcada : parseFloat(humEl.textContent);
+                if (!isNaN(humVal)) {
+                    const abaixoMin = sensor.humMin !== undefined && sensor.humMin !== null && humVal < sensor.humMin;
+                    const acimaMax = sensor.humMax !== undefined && sensor.humMax !== null && humVal > sensor.humMax;
+                    
+                    const chaveAlertaHum = `${id}_hum`;
+
+                    if (abaixoMin || acimaMax) {
+                        boxHum.className = "bg-[#fff1f2] rounded-xl p-3 text-center border border-rose-300 transition-colors duration-300";
+                        
+                        let ultimoTempo = ultimoEnvioAlerta[chaveAlertaHum] || 0;
+                        
+                        if (agora - ultimoTempo > intervaloMs) {
+                            ultimoEnvioAlerta[chaveAlertaHum] = agora;
+                            
+                            dispararNotificacaoLocal(
+                                `🚨 Alerta de Umidade: ${nomeSensor}`,
+                                `O sensor ${id} registrou ${humVal.toFixed(1)}% de umidade (Fora da faixa!).`
+                            );
+                            dispararEmailAlerta(emailDestino, nomeSensor, "Umidade Anormal", humVal.toFixed(1) + "%");
+                        }
+                    } else {
+                        boxHum.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
+                    }
+                }
+            }
+        }
 
         // Carrega os sensores do Firebase ao iniciar a página
         function carregarSensoresAdmin() {
