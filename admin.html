@@ -149,6 +149,7 @@
             box-shadow: 0 0 0 2px #bfdbfe;
         }
     </style>
+
     <script>
         (function(){
             emailjs.init("kD4PCi1Nc4Tw0GD1e");
@@ -418,7 +419,6 @@
             let intervaloMs = intervaloMinutos * 60 * 1000;
             let agora = Date.now();
 
-            // Chaves persistentes no navegador (localStorage) para resistir a page refresh
             let chavePushTemp = `push_enviado_${id}_temp`;
             let chavePushHum = `push_enviado_${id}_hum`;
             let chaveUltimoEmailTemp = `ultimo_envio_${id}_temp`;
@@ -461,8 +461,20 @@
                     } else {
                         boxTemp.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
                         localStorage.setItem(chavePushTemp, "false");
-                        localStorage.removeItem(chaveUltimoEmailTemp);
-                        if (statusEmailTemp) statusEmailTemp.textContent = "";
+                        
+                        // CORREÇÃO: Não removemos mais o 'chaveUltimoEmailTemp' quando o valor volta ao normal.
+                        // O temporizador continua correndo para impedir novos disparos se oscilar de novo antes do tempo acabar.
+                        let ultimoTempo = parseInt(localStorage.getItem(chaveUltimoEmailTemp)) || 0;
+                        if (ultimoTempo > 0 && agora - ultimoTempo < intervaloMs) {
+                            let tempoRestanteMs = (ultimoTempo + intervaloMs) - agora;
+                            let minutosRestantes = Math.ceil(tempoRestanteMs / (60 * 1000));
+                            if (statusEmailTemp) {
+                                statusEmailTemp.textContent = `⏳ Bloqueado por mais ~${minutosRestantes} min`;
+                            }
+                        } else {
+                            localStorage.removeItem(chaveUltimoEmailTemp);
+                            if (statusEmailTemp) statusEmailTemp.textContent = "";
+                        }
                     }
                 }
             }
@@ -504,8 +516,19 @@
                     } else {
                         boxHum.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
                         localStorage.setItem(chavePushHum, "false");
-                        localStorage.removeItem(chaveUltimoEmailHum);
-                        if (statusEmailHum) statusEmailHum.textContent = "";
+                        
+                        // CORREÇÃO: Mantém o bloqueio do temporizador mesmo se a umidade voltar ao normal.
+                        let ultimoTempo = parseInt(localStorage.getItem(chaveUltimoEmailHum)) || 0;
+                        if (ultimoTempo > 0 && agora - ultimoTempo < intervaloMs) {
+                            let tempoRestanteMs = (ultimoTempo + intervaloMs) - agora;
+                            let minutosRestantes = Math.ceil(tempoRestanteMs / (60 * 1000));
+                            if (statusEmailHum) {
+                                statusEmailHum.textContent = `⏳ Bloqueado por mais ~${minutosRestantes} min`;
+                            }
+                        } else {
+                            localStorage.removeItem(chaveUltimoEmailHum);
+                            if (statusEmailHum) statusEmailHum.textContent = "";
+                        }
                     }
                 }
             }
