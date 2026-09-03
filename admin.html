@@ -6,9 +6,12 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Central NewEnergy</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs compat -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js"></script>
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <link rel="manifest" href="manifest.json">
 </head>
 
@@ -146,6 +149,9 @@
     </style>
 
     <script>
+        // Inicialização do EmailJS (Substitua 'SUA_PUBLIC_KEY' pela sua chave pública real do EmailJS)
+        emailjs.init("SUA_PUBLIC_KEY");
+
         const firebaseConfig = {
             apiKey: "AIzaSyAHF7mVM9Yv71cnqG-C1_P7MfEj1hc6_Bs",
             authDomain: "nestu-02.firebaseapp.com",
@@ -213,10 +219,30 @@
                 navigator.serviceWorker.ready.then(registration => {
                     registration.showNotification(titulo, {
                         body: mensagem,
+                        icon: '/NewEnergy-NESTU1.0/icon.png',
                         vibrate: [200, 100, 200]
                     });
                 });
             }
+        }
+
+        function dispararEmailAlerta(emailDestino, equipamento, tipoAlerta, valorDetectado) {
+            if (!emailDestino) return;
+
+            const templateParams = {
+                to_email: emailDestino,
+                equipamento: equipamento,
+                tipo: tipoAlerta,
+                valor: valorDetectado,
+                data: new Date().toLocaleString("pt-BR")
+            };
+
+            emailjs.send('service_v0ldsah', 'template_hnmc8uf', templateParams)
+                .then(response => {
+                    console.log('E-mail de alerta enviado com sucesso!', response.status, response.text);
+                }, error => {
+                    console.error('Erro ao enviar e-mail de alerta:', error);
+                });
         }
 
         db.ref("central_sensores").on("value", snapshot => {
@@ -337,6 +363,7 @@
             const boxHum = document.getElementById(`box-hum-${id}`);
 
             let nomeSensor = sensor.nome || id;
+            let emailDestino = sensor.emailAlerta;
 
             if (tempEl && boxTemp) {
                 const tempVal = tempForcada !== null ? tempForcada : parseFloat(tempEl.textContent);
@@ -355,6 +382,7 @@
                                 `🚨 Alerta de Temperatura: ${nomeSensor}`,
                                 `O sensor ${id} registrou ${tempVal.toFixed(1)}°C (Fora da faixa permitida!).`
                             );
+                            dispararEmailAlerta(emailDestino, nomeSensor, "Temperatura Anormal", tempVal.toFixed(1) + "°C");
                         }
                     } else {
                         boxTemp.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
@@ -380,6 +408,7 @@
                                 `🚨 Alerta de Umidade: ${nomeSensor}`,
                                 `O sensor ${id} registrou ${humVal.toFixed(1)}% de umidade (Fora da faixa!).`
                             );
+                            dispararEmailAlerta(emailDestino, nomeSensor, "Umidade Anormal", humVal.toFixed(1) + "%");
                         }
                     } else {
                         boxHum.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-100 transition-colors duration-300";
