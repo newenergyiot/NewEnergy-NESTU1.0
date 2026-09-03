@@ -204,6 +204,19 @@
         appId: "1:440418278168:web:15c519eb00200a33435c6d"
     };
 
+    if (!firebase.apps.length) {
+        firebase.initializeApp(FIREBASE_CONFIG);
+    }
+    const db = firebase.database();
+    const auth = firebase.auth(); // Inicializa o serviço de autenticação
+
+    // PROTEÇÃO DE AUTH: Redireciona para o login se não houver usuário autenticado
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            window.location.href = "index.html"; 
+        }
+    });
+
     const state = {
         sensorID: new URLSearchParams(window.location.search).get("id"),
         sensorConfig: null,
@@ -211,11 +224,6 @@
         chartInstance: null,
         limites: { tMin: 2, tMax: 8, hMin: 30, hMax: 70 }
     };
-
-    if (!firebase.apps.length) {
-        firebase.initializeApp(FIREBASE_CONFIG);
-    }
-    const db = firebase.database();
 
     let elements = {};
 
